@@ -6,11 +6,15 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { groupId, members, githubLink, notes } = body
 
-  if (!groupId || !members?.length || !githubLink) {
+  const membersJson = (members || []).map((m: any) => {
+    if (typeof m === 'string') return { name: m, matric: '' }
+    return { name: m.name || '', matric: m.matric || '' }
+  })
+
+  if (!groupId || !membersJson.length || !githubLink) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
-  // Get group + department info
   const { data: group, error: gErr } = await supabaseAdmin
     .from('groups')
     .select('*, departments(department, rep_name, rep_email)')
@@ -22,7 +26,6 @@ export async function POST(req: NextRequest) {
 
   const department = (group.departments as any)?.department || 'Unknown'
 
-  // Insert submission
   const { data: submission, error: sErr } = await supabaseAdmin
     .from('submissions')
     .insert({
@@ -33,7 +36,7 @@ export async function POST(req: NextRequest) {
       leader_name: group.leader_name,
       leader_email: group.leader_email,
       leader_phone: group.leader_phone,
-      members,
+      members: membersJson,
       github_link: githubLink,
       notes: notes || null,
       submitted_at: new Date().toISOString(),
@@ -43,13 +46,11 @@ export async function POST(req: NextRequest) {
 
   if (sErr) return NextResponse.json({ error: sErr.message }, { status: 500 })
 
-  // Mark group as submitted
   await supabaseAdmin
     .from('groups')
     .update({ submitted: true })
     .eq('id', groupId)
 
-  // Send emails
   try {
     await sendProjectSubmissionEmail({
       leaderEmail: group.leader_email,
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
       groupNumber: group.group_number,
       projectName: group.project_name,
       githubLink,
-      members,
+      members: membersJson,
     })
   } catch (emailErr) {
     console.error('Email failed:', emailErr)

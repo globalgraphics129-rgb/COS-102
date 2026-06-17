@@ -7,10 +7,11 @@ interface Department {
   id: string; department: string; number_of_groups: number;
   rep_name: string; rep_email: string; rep_phone: string; created_at: string;
 }
+interface Member { name: string; matric: string }
 interface Submission {
   id: string; group_number: number; project_name: string;
   leader_name: string; leader_email: string; leader_phone: string;
-  github_link: string; members: string[]; notes: string;
+  github_link: string; members: Member[]; notes: string;
   submitted_at: string; department: string;
 }
 
@@ -74,7 +75,7 @@ export default function AdminPage() {
       ['Department', 'Group', 'Project Name', 'Leader', 'Leader Email', 'Members', 'GitHub', 'Notes', 'Submitted At'],
       ...filteredSubmissions.map(s => [
         s.department, `Group ${s.group_number}`, s.project_name,
-        s.leader_name, s.leader_email, s.members.join(' | '),
+        s.leader_name, s.leader_email, s.members.map((m: Member) => `${m.name} (${m.matric || '—'})`).join(' | '),
         s.github_link, s.notes || '', new Date(s.submitted_at).toLocaleString()
       ])
     ]
@@ -366,10 +367,22 @@ export default function AdminPage() {
                       </button>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-                      {s.members.map(m => (
-                        <span key={m} className="member-tag" style={{ fontSize: 11, padding: '3px 10px' }}>{m}</span>
-                      ))}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                        Members ({s.members.length})
+                      </p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {s.members.map((m: Member) => (
+                          <span key={m.name + m.matric} style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.15)',
+                            padding: '3px 10px', borderRadius: 8, fontSize: 12,
+                          }}>
+                            <span style={{ color: 'var(--text)' }}>{m.name}</span>
+                            {m.matric && <span className="mono" style={{ fontSize: 10 }}>{m.matric}</span>}
+                          </span>
+                        ))}
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>

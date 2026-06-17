@@ -113,13 +113,20 @@ export async function sendDepartmentRegistrationEmail({
   })
 }
 
+interface Member { name: string; matric: string }
+
 export async function sendProjectSubmissionEmail({
   leaderEmail, leaderName, department, groupNumber, projectName, githubLink, members
 }: {
   leaderEmail: string; leaderName: string; department: string; groupNumber: number;
-  projectName: string; githubLink: string; members: string[]
+  projectName: string; githubLink: string; members: Member[]
 }) {
-  const memberChips = members.map(m => `<span class="member-chip">${m}</span>`).join('')
+  const memberRows = members.map(m => `
+    <div style="display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid rgba(6,182,212,0.1);font-size:13px;">
+      <span style="color:#e2e8f0">${m.name}</span>
+      <span style="color:#67e8f9;font-family:monospace">${m.matric || '—'}</span>
+    </div>
+  `).join('')
   const content = `
     <p class="greeting">Submission received, ${leaderName}! 🚀</p>
     <p class="text">Your group's project has been successfully submitted. The lecturer will be able to view all submissions through the admin panel. Here's a summary of what was submitted:</p>
@@ -134,7 +141,9 @@ export async function sendProjectSubmissionEmail({
     </div>
     <div class="members-box">
       <h3>👥 Group Members (${members.length})</h3>
-      <div>${memberChips}</div>
+      <div style="background:rgba(6,182,212,0.05);border-radius:8px;overflow:hidden;">
+        ${memberRows}
+      </div>
     </div>
     <a href="${githubLink}" class="github-btn">🔗 View Project on GitHub</a>
     <p class="support-text">If you need to make changes or have questions, reply to this email at <a href="mailto:${REPLY_TO}">${REPLY_TO}</a></p>

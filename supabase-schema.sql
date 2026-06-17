@@ -39,7 +39,7 @@ CREATE TABLE submissions (
   leader_name TEXT NOT NULL,
   leader_email TEXT NOT NULL,
   leader_phone TEXT,
-  members TEXT[] NOT NULL DEFAULT '{}',
+  members JSONB NOT NULL DEFAULT '[]'::jsonb,
   github_link TEXT NOT NULL,
   notes TEXT,
   submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
