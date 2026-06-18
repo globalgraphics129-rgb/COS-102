@@ -58,6 +58,9 @@ export default function AdminPage() {
   const [studentSearch, setStudentSearch] = useState('')
   const [studentDeptFilter, setStudentDeptFilter] = useState('')
   const [studentGroupFilter, setStudentGroupFilter] = useState('')
+  const [editDept, setEditDept] = useState<Department | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({ department: '', rep_name: '', rep_email: '', rep_phone: '', number_of_groups: 1 })
 
   const login = () => {
     if (pw === ADMIN_PASSWORD) { setAuthed(true); loadData() }
@@ -122,6 +125,49 @@ export default function AdminPage() {
       setDeptGroups(prev => { const n = { ...prev }; delete n[id]; return n })
       toast.success('Deleted')
     } catch { toast.error('Failed') }
+  }
+
+  const openEditModal = (d: Department) => {
+    setEditDept(d)
+    setEditForm({
+      department: d.department,
+      rep_name: d.rep_name,
+      rep_email: d.rep_email,
+      rep_phone: d.rep_phone || '',
+      number_of_groups: d.number_of_groups,
+    })
+    setShowEditModal(true)
+  }
+
+  const saveEdit = async () => {
+    if (!editDept) return
+    if (!editForm.department || !editForm.rep_name || !editForm.rep_email) {
+      toast.error('Department, rep name, and rep email are required')
+      return
+    }
+    try {
+      const res = await fetch(`/api/admin?type=department&id=${editDept.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          department: editForm.department,
+          rep_name: editForm.rep_name,
+          rep_email: editForm.rep_email,
+          rep_phone: editForm.rep_phone || null,
+          number_of_groups: Number(editForm.number_of_groups),
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        toast.error(err.error || 'Failed to update')
+        return
+      }
+      const data = await res.json()
+      setDepartments(prev => prev.map(d => d.id === editDept.id ? data.department : d))
+      setShowEditModal(false)
+      setEditDept(null)
+      toast.success('Department updated')
+    } catch { toast.error('Failed to update') }
   }
 
   const startEdit = (s: Submission) => {
@@ -849,6 +895,8 @@ export default function AdminPage() {
                           <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
                             {new Date(d.created_at).toLocaleDateString()}
                           </span>
+                          <button onClick={(e) => { e.stopPropagation(); openEditModal(d) }}
+                            className="btn btn-secondary" style={{ fontSize: 10, padding: '3px 8px' }}>Edit</button>
                           <button onClick={(e) => { e.stopPropagation(); deleteDepartment(d.id) }}
                             className="btn btn-danger" style={{ fontSize: 10, padding: '3px 8px' }}>Delete</button>
                         </div>
@@ -1234,6 +1282,81 @@ export default function AdminPage() {
           )}
         </main>
       </div>
+
+      {/* Edit Department Modal */}
+      {showEditModal && editDept && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setShowEditModal(false)}
+        >
+          <div
+            className="card"
+            style={{ width: '100%', maxWidth: 480, margin: 24 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>Edit Department</h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label className="label">Department Name</label>
+                <input
+                  className="input"
+                  value={editForm.department}
+                  onChange={e => setEditForm(f => ({ ...f, department: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">Class Rep Name</label>
+                <input
+                  className="input"
+                  value={editForm.rep_name}
+                  onChange={e => setEditForm(f => ({ ...f, rep_name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">Rep Email</label>
+                <input
+                  className="input"
+                  type="email"
+                  value={editForm.rep_email}
+                  onChange={e => setEditForm(f => ({ ...f, rep_email: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">Rep Phone</label>
+                <input
+                  className="input"
+                  value={editForm.rep_phone}
+                  onChange={e => setEditForm(f => ({ ...f, rep_phone: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">Number of Groups</label>
+                <input
+                  className="input"
+                  type="number"
+                  min={1}
+                  value={editForm.number_of_groups}
+                  onChange={e => setEditForm(f => ({ ...f, number_of_groups: parseInt(e.target.value) || 1 }))}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowEditModal(false)} className="btn btn-secondary">
+                Cancel
+              </button>
+              <button onClick={saveEdit} className="btn btn-primary">
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

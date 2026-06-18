@@ -76,3 +76,37 @@ export async function DELETE(req: NextRequest) {
 
   return NextResponse.json({ error: 'Unknown type' }, { status: 400 })
 }
+
+export async function PUT(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const type = searchParams.get('type')
+  const id = searchParams.get('id')
+
+  if (type !== 'department' || !id) {
+    return NextResponse.json({ error: 'type=department and id are required' }, { status: 400 })
+  }
+
+  const body = await req.json()
+  const { department, rep_name, rep_email, rep_phone, number_of_groups } = body
+
+  const updates: Record<string, unknown> = {}
+  if (department !== undefined) updates.department = department
+  if (rep_name !== undefined) updates.rep_name = rep_name
+  if (rep_email !== undefined) updates.rep_email = rep_email
+  if (rep_phone !== undefined) updates.rep_phone = rep_phone
+  if (number_of_groups !== undefined) updates.number_of_groups = number_of_groups
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('departments')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ department: data })
+}
