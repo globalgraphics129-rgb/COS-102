@@ -127,29 +127,48 @@ export default function AdminPage() {
     }
 
     const doc = new jsPDF('landscape', 'mm', 'a4')
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const pageHeight = doc.internal.pageSize.getHeight()
+    const pw = doc.internal.pageSize.getWidth()
+    const ph = doc.internal.pageSize.getHeight()
 
-    // -- Title Page --
-    doc.setFillColor(30, 30, 40)
-    doc.rect(0, 0, pageWidth, pageHeight, 'F')
+    // ==================== THEME COLORS ====================
+    const PURPLE_DARK: [number, number, number] = [40, 20, 80]
+    const PURPLE_MID: [number, number, number] = [90, 50, 200]
+    const PURPLE_LIGHT: [number, number, number] = [130, 90, 230]
+    const CYAN: [number, number, number] = [0, 190, 220]
+    const DARK_BG: [number, number, number] = [22, 22, 32]
+    const CARD_BG: [number, number, number] = [245, 243, 255]
+    const TEXT_MUTED: [number, number, number] = [140, 140, 160]
+    const TEXT_DARK: [number, number, number] = [50, 50, 60]
+
+    // ==================== TITLE PAGE ====================
+    // Gradient-like background (solid dark purple)
+    doc.setFillColor(PURPLE_DARK[0], PURPLE_DARK[1], PURPLE_DARK[2])
+    doc.rect(0, 0, pw, ph, 'F')
+    // Decorative accent bar
+    doc.setFillColor(CYAN[0], CYAN[1], CYAN[2])
+    doc.rect(0, ph / 2 - 55, pw, 2, 'F')
+    doc.rect(0, ph / 2 + 45, pw, 1, 'F')
+    // Title
     doc.setTextColor(255, 255, 255)
-    doc.setFontSize(28)
-    doc.text('COS-102 Project Hub', pageWidth / 2, pageHeight / 2 - 40, { align: 'center' })
-    doc.setFontSize(16)
-    doc.text('Submissions Report', pageWidth / 2, pageHeight / 2 - 10, { align: 'center' })
-    doc.setFontSize(11)
-    doc.setTextColor(180, 180, 200)
-    doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, pageHeight / 2 + 25, { align: 'center' })
-    doc.text('Confidential \u2014 Lecturer/Admin Use Only', pageWidth / 2, pageHeight / 2 + 40, { align: 'center' })
+    doc.setFontSize(34)
+    doc.text('COS-102 Project Hub', pw / 2, ph / 2 - 28, { align: 'center' })
+    doc.setFontSize(20)
+    doc.setTextColor(CYAN[0], CYAN[1], CYAN[2])
+    doc.text('Submissions Report', pw / 2, ph / 2, { align: 'center' })
+    doc.setFontSize(12)
+    doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
+    doc.text(`Generated: ${new Date().toLocaleString()}`, pw / 2, ph / 2 + 30, { align: 'center' })
+    doc.text('Confidential \u2014 Lecturer/Admin Use Only', pw / 2, ph / 2 + 44, { align: 'center' })
+    doc.setFontSize(9)
+    doc.text('COS 102 \u2014 Computer Science Course Project', pw / 2, ph - 20, { align: 'center' })
 
-    // -- Summary Section --
+    // ==================== EXECUTIVE SUMMARY ====================
     doc.addPage()
-    doc.setFillColor(30, 30, 40)
-    doc.rect(0, 0, pageWidth, 25, 'F')
+    doc.setFillColor(PURPLE_DARK[0], PURPLE_DARK[1], PURPLE_DARK[2])
+    doc.rect(0, 0, pw, 28, 'F')
     doc.setTextColor(255, 255, 255)
-    doc.setFontSize(16)
-    doc.text('Executive Summary', 14, 17)
+    doc.setFontSize(18)
+    doc.text('Executive Summary', 16, 19)
 
     const totalStudents = submissions.reduce((a, s) => a + s.members.length, 0)
     const uniqueProjects = new Set(submissions.map(s => s.project_name)).size
@@ -160,111 +179,157 @@ export default function AdminPage() {
     }, {})
     const deptNames = Object.keys(grouped).sort()
 
-    const summaryData = [
-      ['Total Departments', `${departments.length}`],
-      ['Departments with Submissions', `${deptNames.length}`],
-      ['Total Submissions', `${submissions.length}`],
-      ['Total Students', `${totalStudents}`],
-      ['Unique Projects', `${uniqueProjects}`],
-      ['Avg Students per Submission', `${(totalStudents / submissions.length).toFixed(1)}`],
+    // Metric cards visual
+    const metrics: [string, string, [number, number, number]][] = [
+      ['Departments', `${deptNames.length}`, PURPLE_MID],
+      ['Submissions', `${submissions.length}`, PURPLE_LIGHT],
+      ['Students', `${totalStudents}`, CYAN],
+      ['Projects', `${uniqueProjects}`, [240, 180, 50]],
     ]
-
-    autoTable(doc, {
-      startY: 32,
-      head: [['Metric', 'Value']],
-      body: summaryData,
-      theme: 'striped',
-      headStyles: { fillColor: [100, 60, 210], fontSize: 11 },
-      bodyStyles: { fontSize: 10 },
-      columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'center' } },
-      margin: { left: 14, right: 14 },
+    const cardW = (pw - 48) / 4
+    metrics.forEach(([label, value, color], i) => {
+      const x = 16 + i * (cardW + 6)
+      doc.setFillColor(CARD_BG[0], CARD_BG[1], CARD_BG[2])
+      doc.setDrawColor(color[0], color[1], color[2])
+      doc.roundedRect(x, 36, cardW, 32, 3, 3, 'FD')
+      doc.setTextColor(color[0], color[1], color[2])
+      doc.setFontSize(18)
+      doc.text(value as string, x + cardW / 2, 52, { align: 'center' })
+      doc.setFontSize(9)
+      doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2])
+      doc.text(label as string, x + cardW / 2, 64, { align: 'center' })
     })
 
-    // -- Department Breakdown --
-    doc.addPage()
-    doc.setFillColor(30, 30, 40)
-    doc.rect(0, 0, pageWidth, 25, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(16)
-    doc.text('Department Breakdown', 14, 17)
+    // Key stats table
+    const stats = [
+      ['Total Departments Registered', `${departments.length}`],
+      ['Departments that Submitted', `${deptNames.length}`],
+      ['Total Submissions Received', `${submissions.length}`],
+      ['Total Students Enrolled', `${totalStudents}`],
+      ['Unique Project Titles', `${uniqueProjects}`],
+      ['Average Students / Submission', `${(totalStudents / submissions.length).toFixed(1)}`],
+    ]
+    autoTable(doc, {
+      startY: 80,
+      head: [['Key Performance Indicators', 'Value']],
+      body: stats,
+      theme: 'striped',
+      headStyles: { fillColor: PURPLE_MID, fontSize: 12, halign: 'center' },
+      bodyStyles: { fontSize: 11 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 160 }, 1: { halign: 'center', cellWidth: 60 } },
+      margin: { left: 16, right: 16 },
+      tableLineColor: PURPLE_LIGHT,
+      tableLineWidth: 0.5,
+    })
 
-    let yPos = 35
+    // ==================== STUDENT ROSTER BY DEPARTMENT ====================
+    doc.addPage()
+    doc.setFillColor(PURPLE_DARK[0], PURPLE_DARK[1], PURPLE_DARK[2])
+    doc.rect(0, 0, pw, 28, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(18)
+    doc.text('Student Roster by Department', 16, 19)
+
+    let yPos = 36
+    let globalCounter = 0
 
     deptNames.forEach((dept) => {
       const deptSubs = grouped[dept]
       const deptInfo = departments.find(d => d.department === dept)
 
-      if (yPos > 170) {
+      // Check if we need a new page (leave room for header + table)
+      if (yPos > ph - 60) {
+        // Page footer
+        doc.setFontSize(8)
+        doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
+        doc.text(`COS-102 Project Hub Report \u2014 Page ${(doc as any).getNumberOfPages()}`, pw / 2, ph - 10, { align: 'center' })
         doc.addPage()
-        doc.setFillColor(30, 30, 40)
-        doc.rect(0, 0, pageWidth, 20, 'F')
-        doc.setTextColor(255, 255, 255)
-        doc.setFontSize(14)
-        doc.text('Department Breakdown (continued)', 14, 14)
-        yPos = 28
+        yPos = 16
       }
 
-      doc.setTextColor(100, 60, 210)
-      doc.setFontSize(12)
-      doc.text(dept, 14, yPos)
-      yPos += 6
-      doc.setTextColor(100, 100, 120)
-      doc.setFontSize(9)
-      const classRep = deptInfo ? `Class Rep: ${deptInfo.rep_name} (${deptInfo.rep_email})` : ''
-      doc.text(classRep, 14, yPos)
-      yPos += 9
+      // Department section header
+      doc.setFillColor(PURPLE_MID[0], PURPLE_MID[1], PURPLE_MID[2])
+      doc.roundedRect(12, yPos, pw - 24, 14, 3, 3, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(14)
+      doc.text(dept, 20, yPos + 10)
+      yPos += 22
 
-      const bodyRows = deptSubs.map(s => [
-        `Group ${s.group_number}`,
-        s.project_name,
-        s.leader_name,
-        s.leader_email,
-        s.leader_phone || '\u2014',
-        fmtMembers(s.members),
-        s.github_link,
-        s.notes || '\u2014',
-        new Date(s.submitted_at).toLocaleDateString(),
-      ])
+      if (deptInfo) {
+        doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2])
+        doc.setFontSize(10)
+        doc.text(`Class Rep: ${deptInfo.rep_name}  |  ${deptInfo.rep_email}  |  ${deptInfo.rep_phone || '\u2014'}`, 20, yPos)
+        yPos += 10
+      }
 
-      autoTable(doc, {
-        startY: yPos,
-        head: [['Group', 'Project', 'Leader', 'Email', 'Phone', 'Members (Name & Matric)', 'GitHub', 'Notes', 'Date']],
-        body: bodyRows,
-        theme: 'striped',
-        headStyles: { fillColor: [80, 50, 180], fontSize: 7 },
-        bodyStyles: { fontSize: 6.5 },
-        columnStyles: {
-          0: { cellWidth: 16 },
-          1: { cellWidth: 32 },
-          2: { cellWidth: 22 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 18 },
-          5: { cellWidth: 48 },
-          6: { cellWidth: 36 },
-          7: { cellWidth: 22 },
-          8: { cellWidth: 16 },
-        },
-        margin: { left: 14, right: 14 },
+      // Build expanded student rows for this department
+      const studentRows: any[][] = []
+      deptSubs.forEach((s) => {
+        const members = Array.isArray(s.members) ? s.members : []
+        members.forEach((m: any) => {
+          globalCounter++
+          const name = typeof m === 'string' ? m : (m.name || '')
+          const matric = typeof m === 'string' ? '' : (m.matric || '')
+          studentRows.push([
+            globalCounter,
+            name,
+            matric,
+            `Group ${s.group_number}`,
+            s.project_name,
+            s.leader_name,
+            s.github_link,
+            new Date(s.submitted_at).toLocaleDateString(),
+          ])
+        })
       })
 
-      yPos = (doc as any).lastAutoTable.finalY + 14
+      if (studentRows.length > 0) {
+        autoTable(doc, {
+          startY: yPos,
+          head: [['#', 'Student Name', 'Matric No.', 'Group', 'Project Title', 'Leader', 'GitHub Link', 'Submitted']],
+          body: studentRows,
+          theme: 'striped',
+          headStyles: { fillColor: PURPLE_DARK, fontSize: 10, halign: 'center' },
+          bodyStyles: { fontSize: 9 },
+          columnStyles: {
+            0: { cellWidth: 12, halign: 'center' },
+            1: { cellWidth: 48 },
+            2: { cellWidth: 32, halign: 'center' },
+            3: { cellWidth: 20, halign: 'center' },
+            4: { cellWidth: 58 },
+            5: { cellWidth: 32 },
+            6: { cellWidth: 52 },
+            7: { cellWidth: 22, halign: 'center' },
+          },
+          margin: { left: 16, right: 16 },
+          alternateRowStyles: { fillColor: [248, 245, 255] },
+          tableLineColor: [200, 190, 220],
+          tableLineWidth: 0.3,
+        })
+        yPos = (doc as any).lastAutoTable.finalY + 16
+      } else {
+        doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
+        doc.setFontSize(10)
+        doc.text('No student data available for this department.', 20, yPos + 8)
+        yPos += 16
+      }
     })
 
-    // -- Footer on every page --
+    // ==================== PAGE FOOTER (all pages) ====================
     const pageCount = (doc as any).getNumberOfPages()
     for (let i = 1; i <= pageCount; i++) {
       (doc as any).setPage(i)
       doc.setFontSize(8)
-      doc.setTextColor(150, 150, 160)
+      doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
       doc.text(
         `COS-102 Project Hub Report \u2014 Page ${i} of ${pageCount}`,
-        pageWidth / 2,
-        pageHeight - 10,
+        pw / 2,
+        ph - 10,
         { align: 'center' }
       )
     }
 
-    doc.save(`COS102-Submissions-Report-${Date.now()}.pdf`)
+    doc.save(`COS102-Project-Hub-Report-${Date.now()}.pdf`)
     toast.success('PDF exported!')
   }
 

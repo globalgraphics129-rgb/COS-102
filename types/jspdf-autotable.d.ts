@@ -1,15 +1,29 @@
 import { jsPDF } from 'jspdf'
 
 declare module 'jspdf-autotable' {
+  type RGB = [number, number, number]
+
+  interface Styles {
+    fillColor?: RGB
+    fontSize?: number
+    fontStyle?: string
+    halign?: string
+    cellWidth?: number
+    textColor?: RGB
+  }
+
   interface AutoTableOptions {
     head?: (string | number)[][]
     body?: (string | number)[][]
     startY?: number
     theme?: 'striped' | 'grid' | 'plain'
-    headStyles?: Record<string, unknown>
-    bodyStyles?: Record<string, unknown>
-    columnStyles?: Record<number, Record<string, unknown>>
+    headStyles?: Styles
+    bodyStyles?: Styles
+    columnStyles?: Record<number, Styles>
     margin?: Record<string, number>
+    alternateRowStyles?: Styles
+    tableLineColor?: RGB
+    tableLineWidth?: number
   }
 
   export default function autoTable(
