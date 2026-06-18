@@ -24,11 +24,18 @@ interface Submission {
   submitted_at: string; department: string;
 }
 
+interface StudentEntry {
+  submissionId: string
+  memberIndex: number
+  name: string
+  matric: string
+  groupNumber: number
+  department: string
+}
+
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'cos102admin'
 
-
-
-type Tab = 'overview' | 'departments' | 'submissions'
+type Tab = 'overview' | 'departments' | 'submissions' | 'students'
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
@@ -45,6 +52,12 @@ export default function AdminPage() {
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('table')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editMembers, setEditMembers] = useState<Member[]>([])
+  const [editStudentKey, setEditStudentKey] = useState<string | null>(null)
+  const [editStudentName, setEditStudentName] = useState('')
+  const [editStudentMatric, setEditStudentMatric] = useState('')
+  const [studentSearch, setStudentSearch] = useState('')
+  const [studentDeptFilter, setStudentDeptFilter] = useState('')
+  const [studentGroupFilter, setStudentGroupFilter] = useState('')
 
   const login = () => {
     if (pw === ADMIN_PASSWORD) { setAuthed(true); loadData() }
@@ -149,6 +162,68 @@ export default function AdminPage() {
       toast.error('Failed to update members')
     }
   }
+
+  const allStudents: StudentEntry[] = submissions.flatMap(s =>
+    (s.members || []).map((m, idx) => {
+      let name: string, matric: string
+      if (typeof m === 'string') {
+        const parsed = parseMatric(m)
+        name = parsed.name; matric = parsed.matric
+      } else {
+        name = m.name || ''; matric = m.matric || ''
+        if (!matric && name) {
+          const parsed = parseMatric(name)
+          name = parsed.name; matric = parsed.matric
+        }
+      }
+      return { submissionId: s.id, memberIndex: idx, name, matric, groupNumber: s.group_number, department: s.department }
+    })
+  )
+
+  const filteredStudents = allStudents.filter(st => {
+    const q = studentSearch.toLowerCase()
+    const matchSearch = !q || st.name.toLowerCase().includes(q) || st.matric.toLowerCase().includes(q) || String(st.groupNumber).includes(q) || st.department.toLowerCase().includes(q)
+    const matchDept = !studentDeptFilter || st.department === studentDeptFilter
+    const matchGroup = !studentGroupFilter || st.groupNumber === Number(studentGroupFilter)
+    return matchSearch && matchDept && matchGroup
+  })
+
+  const startEditStudent = (st: StudentEntry) => {
+    setEditStudentKey(`${st.submissionId}-${st.memberIndex}`)
+    setEditStudentName(st.name)
+    setEditStudentMatric(st.matric)
+  }
+
+  const cancelEditStudent = () => {
+    setEditStudentKey(null)
+    setEditStudentName('')
+    setEditStudentMatric('')
+  }
+
+  const saveStudent = async (st: StudentEntry) => {
+    const sub = submissions.find(s => s.id === st.submissionId)
+    if (!sub) return
+    const updatedMembers = sub.members.map((m, idx) => {
+      if (idx === st.memberIndex) return { name: editStudentName.trim(), matric: editStudentMatric.trim() }
+      return m
+    })
+    try {
+      const res = await fetch(`/api/admin?type=submission&id=${st.submissionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ members: updatedMembers }),
+      })
+      if (!res.ok) throw new Error()
+      setSubmissions(prev => prev.map(s => s.id === st.submissionId ? { ...s, members: updatedMembers } : s))
+      toast.success('Updated')
+      cancelEditStudent()
+    } catch {
+      toast.error('Failed to update')
+    }
+  }
+
+  const uniqueStudentDepts = Array.from(new Set(allStudents.map(st => st.department))).sort()
+  const uniqueStudentGroups = Array.from(new Set(allStudents.map(st => st.groupNumber))).sort((a, b) => a - b)
 
   const exportPDF = () => {
     if (submissions.length === 0) {
@@ -403,6 +478,49 @@ export default function AdminPage() {
 
     drawFooter(pageNum)
 
+    // ===== STUDENT ROSTER =====
+    addSectionPage('Complete Student Roster')
+    yPos = 36
+    pageNum++
+
+    const allStudents = submissions.flatMap(s =>
+      (s.members || []).map((m: any, idx: number) => {
+        let n: string, mat: string
+        if (typeof m === 'string') {
+          const parsed = parseMatric(m)
+          n = parsed.name; mat = parsed.matric
+        } else {
+          n = m.name || ''; mat = m.matric || ''
+          if (!mat && n) {
+            const parsed = parseMatric(n)
+            n = parsed.name; mat = parsed.matric
+          }
+        }
+        return [idx + 1, n, mat || '\u2014', `Group ${s.group_number}`, s.department]
+      })
+    )
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [['#', 'Student Name', 'Matric No.', 'Group', 'Department']],
+      body: allStudents,
+      theme: 'striped',
+      headStyles: { fillColor: PURPLE_DARK, fontSize: 9, halign: 'center' },
+      bodyStyles: { fontSize: 8 },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 40, halign: 'center' },
+        3: { cellWidth: 24, halign: 'center' },
+        4: { cellWidth: 56 },
+      },
+      margin: { left: 16, right: 16 },
+      alternateRowStyles: { fillColor: CARD_BG },
+      tableLineColor: [210, 200, 230],
+      tableLineWidth: 0.15,
+    })
+    drawFooter(pageNum)
+
     // ===== PAGE NUMBERS ON ALL PAGES =====
     const totalPages = (doc as any).getNumberOfPages()
     for (let i = 1; i <= totalPages; i++) {
@@ -462,6 +580,7 @@ export default function AdminPage() {
 
   const tabs: { id: Tab; icon: string; label: string }[] = [
     { id: 'overview', icon: '\uD83D\uDCCA', label: 'Overview' },
+    { id: 'students', icon: '\uD83C\uDF93', label: 'Students' },
     { id: 'departments', icon: '\uD83C\uDFDB\uFE0F', label: 'Departments' },
     { id: 'submissions', icon: '\uD83D\uDCE6', label: 'Submissions' },
   ]
@@ -510,7 +629,7 @@ export default function AdminPage() {
               {[
                 { label: 'Departments', value: departments.length, color: 'var(--violet-light)' },
                 { label: 'Submissions', value: submissions.length, color: 'var(--cyan-light)' },
-                { label: 'Total Students', value: submissions.reduce((a, s) => a + s.members.length, 0), color: '#6ee7b7' },
+                { label: 'Students', value: allStudents.length, color: '#6ee7b7' },
               ].map(stat => (
                 <div key={stat.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
                   <span style={{ color: 'var(--text-3)' }}>{stat.label}</span>
@@ -605,6 +724,87 @@ export default function AdminPage() {
                     ))}
                     {submissions.length === 0 && (
                       <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-3)' }}>No submissions yet</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {tab === 'students' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.5 }}>
+                  Students <span style={{ color: 'var(--text-3)', fontSize: 16, fontWeight: 400 }}>({filteredStudents.length})</span>
+                </h2>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input className="input" value={studentSearch} onChange={e => setStudentSearch(e.target.value)}
+                    placeholder="Search name, matric, group..."
+                    style={{ width: 200, fontSize: 12, padding: '6px 10px' }} />
+                  <select className="input select" value={studentDeptFilter} onChange={e => setStudentDeptFilter(e.target.value)}
+                    style={{ width: 160, fontSize: 12, padding: '6px 10px' }}>
+                    <option value="">All departments</option>
+                    {uniqueStudentDepts.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <select className="input select" value={studentGroupFilter} onChange={e => setStudentGroupFilter(e.target.value)}
+                    style={{ width: 120, fontSize: 12, padding: '6px 10px' }}>
+                    <option value="">All groups</option>
+                    {uniqueStudentGroups.map(g => <option key={g} value={g}>Group {g}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Student Name</th>
+                      <th>Matric No.</th>
+                      <th>Group</th>
+                      <th>Department</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStudents.map((st, idx) => {
+                      const isEditing = editStudentKey === `${st.submissionId}-${st.memberIndex}`
+                      return (
+                        <tr key={`${st.submissionId}-${st.memberIndex}`}>
+                          <td style={{ color: 'var(--text-3)', width: 36 }}>{idx + 1}</td>
+                          <td>
+                            {isEditing ? (
+                              <input className="input" value={editStudentName} onChange={e => setEditStudentName(e.target.value)}
+                                style={{ width: 180, fontSize: 12, padding: '3px 6px' }} />
+                            ) : (
+                              <span style={{ fontWeight: 500 }}>{st.name}</span>
+                            )}
+                          </td>
+                          <td>
+                            {isEditing ? (
+                              <input className="input" value={editStudentMatric} onChange={e => setEditStudentMatric(e.target.value)}
+                                style={{ width: 120, fontSize: 12, padding: '3px 6px' }} />
+                            ) : (
+                              <span className="mono" style={{ color: 'var(--violet-light)' }}>{st.matric || '\u2014'}</span>
+                            )}
+                          </td>
+                          <td>Group {st.groupNumber}</td>
+                          <td><span className="badge badge-violet" style={{ fontSize: 10 }}>{st.department}</span></td>
+                          <td>
+                            {isEditing ? (
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <button onClick={() => saveStudent(st)} className="btn btn-cyan" style={{ fontSize: 10, padding: '3px 8px' }}>Save</button>
+                                <button onClick={cancelEditStudent} className="btn btn-secondary" style={{ fontSize: 10, padding: '3px 8px' }}>Cancel</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => startEditStudent(st)} className="btn btn-primary" style={{ fontSize: 10, padding: '3px 8px' }}>Edit</button>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                    {filteredStudents.length === 0 && (
+                      <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40, color: 'var(--text-3)' }}>No students found.</td></tr>
                     )}
                   </tbody>
                 </table>
