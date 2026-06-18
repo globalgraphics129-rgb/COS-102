@@ -43,6 +43,8 @@ export default function AdminPage() {
   const [deptGroups, setDeptGroups] = useState<Record<string, GroupInfo[]>>({})
   const [loadingGroups, setLoadingGroups] = useState(false)
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('table')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editMembers, setEditMembers] = useState<Member[]>([])
 
   const login = () => {
     if (pw === ADMIN_PASSWORD) { setAuthed(true); loadData() }
@@ -109,6 +111,45 @@ export default function AdminPage() {
     } catch { toast.error('Failed') }
   }
 
+  const startEdit = (s: Submission) => {
+    setEditingId(s.id)
+    setEditMembers(s.members.map(m => ({ ...m })))
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditMembers([])
+  }
+
+  const updateMemberField = (idx: number, field: 'name' | 'matric', value: string) => {
+    setEditMembers(prev => prev.map((m, i) => i === idx ? { ...m, [field]: value } : m))
+  }
+
+  const addEditMember = () => {
+    setEditMembers(prev => [...prev, { name: '', matric: '' }])
+  }
+
+  const removeEditMember = (idx: number) => {
+    setEditMembers(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const saveMembers = async (id: string) => {
+    const cleaned = editMembers.filter(m => m.name.trim())
+    try {
+      const res = await fetch(`/api/admin?type=submission&id=${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ members: cleaned }),
+      })
+      if (!res.ok) throw new Error()
+      setSubmissions(prev => prev.map(s => s.id === id ? { ...s, members: cleaned } : s))
+      toast.success('Members updated')
+      cancelEdit()
+    } catch {
+      toast.error('Failed to update members')
+    }
+  }
+
   const exportPDF = () => {
     if (submissions.length === 0) {
       toast.error('No submissions to export')
@@ -119,45 +160,13 @@ export default function AdminPage() {
     const pw = doc.internal.pageSize.getWidth()
     const ph = doc.internal.pageSize.getHeight()
 
-    // ==================== THEME COLORS ====================
     const PURPLE_DARK: [number, number, number] = [40, 20, 80]
     const PURPLE_MID: [number, number, number] = [90, 50, 200]
     const PURPLE_LIGHT: [number, number, number] = [130, 90, 230]
     const CYAN: [number, number, number] = [0, 190, 220]
-    const DARK_BG: [number, number, number] = [22, 22, 32]
-    const CARD_BG: [number, number, number] = [245, 243, 255]
+    const CARD_BG: [number, number, number] = [248, 246, 255]
     const TEXT_MUTED: [number, number, number] = [140, 140, 160]
     const TEXT_DARK: [number, number, number] = [50, 50, 60]
-
-    // ==================== TITLE PAGE ====================
-    // Gradient-like background (solid dark purple)
-    doc.setFillColor(PURPLE_DARK[0], PURPLE_DARK[1], PURPLE_DARK[2])
-    doc.rect(0, 0, pw, ph, 'F')
-    // Decorative accent bar
-    doc.setFillColor(CYAN[0], CYAN[1], CYAN[2])
-    doc.rect(0, ph / 2 - 55, pw, 2, 'F')
-    doc.rect(0, ph / 2 + 45, pw, 1, 'F')
-    // Title
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(34)
-    doc.text('COS-102 Project Hub', pw / 2, ph / 2 - 28, { align: 'center' })
-    doc.setFontSize(20)
-    doc.setTextColor(CYAN[0], CYAN[1], CYAN[2])
-    doc.text('Submissions Report', pw / 2, ph / 2, { align: 'center' })
-    doc.setFontSize(12)
-    doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
-    doc.text(`Generated: ${new Date().toLocaleString()}`, pw / 2, ph / 2 + 30, { align: 'center' })
-    doc.text('Confidential \u2014 Lecturer/Admin Use Only', pw / 2, ph / 2 + 44, { align: 'center' })
-    doc.setFontSize(9)
-    doc.text('COS 102 \u2014 Computer Science Course Project', pw / 2, ph - 20, { align: 'center' })
-
-    // ==================== EXECUTIVE SUMMARY ====================
-    doc.addPage()
-    doc.setFillColor(PURPLE_DARK[0], PURPLE_DARK[1], PURPLE_DARK[2])
-    doc.rect(0, 0, pw, 28, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(18)
-    doc.text('Executive Summary', 16, 19)
 
     const totalStudents = submissions.reduce((a, s) => a + s.members.length, 0)
     const uniqueProjects = new Set(submissions.map(s => s.project_name)).size
@@ -168,114 +177,175 @@ export default function AdminPage() {
     }, {})
     const deptNames = Object.keys(grouped).sort()
 
-    // Metric cards visual
+    const drawFooter = (pageNum?: number) => {
+      doc.setFontSize(8)
+      doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
+      doc.text(`COS-102 Project Hub Report`, 16, ph - 8)
+      if (pageNum) doc.text(`Page ${pageNum}`, pw - 16, ph - 8, { align: 'right' })
+      doc.setDrawColor(200, 190, 220)
+      doc.line(16, ph - 12, pw - 16, ph - 12)
+    }
+
+    const addSectionPage = (title: string) => {
+      doc.addPage()
+      doc.setFillColor(PURPLE_DARK[0], PURPLE_DARK[1], PURPLE_DARK[2])
+      doc.rect(0, 0, pw, 24, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(16)
+      doc.text(title, 16, 17)
+    }
+
+    // ===== COVER PAGE =====
+    doc.setFillColor(PURPLE_DARK[0], PURPLE_DARK[1], PURPLE_DARK[2])
+    doc.rect(0, 0, pw, ph, 'F')
+    doc.setFillColor(CYAN[0], CYAN[1], CYAN[2])
+    doc.rect(0, ph / 2 - 40, pw, 2, 'F')
+    doc.rect(0, ph / 2 + 36, pw, 1, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(36)
+    doc.text('COS-102 Project Hub', pw / 2, ph / 2 - 18, { align: 'center' })
+    doc.setFontSize(22)
+    doc.setTextColor(CYAN[0], CYAN[1], CYAN[2])
+    doc.text('Submissions Report', pw / 2, ph / 2 + 10, { align: 'center' })
+    doc.setFontSize(11)
+    doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
+    doc.text(`Generated: ${new Date().toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, pw / 2, ph / 2 + 42, { align: 'center' })
+    doc.text('Confidential \u2014 Lecturer/Admin Use Only', pw / 2, ph / 2 + 56, { align: 'center' })
+    drawFooter()
+
+    // ===== SUMMARY PAGE =====
+    addSectionPage('Executive Summary')
+    let yPos = 36
+
+    const cardW = (pw - 56) / 4
     const metrics: [string, string, [number, number, number]][] = [
       ['Departments', `${deptNames.length}`, PURPLE_MID],
       ['Submissions', `${submissions.length}`, PURPLE_LIGHT],
       ['Students', `${totalStudents}`, CYAN],
       ['Projects', `${uniqueProjects}`, [240, 180, 50]],
     ]
-    const cardW = (pw - 48) / 4
     metrics.forEach(([label, value, color], i) => {
-      const x = 16 + i * (cardW + 6)
+      const x = 16 + i * (cardW + 8)
       doc.setFillColor(CARD_BG[0], CARD_BG[1], CARD_BG[2])
       doc.setDrawColor(color[0], color[1], color[2])
-      doc.roundedRect(x, 36, cardW, 32, 3, 3, 'FD')
-      doc.setTextColor(color[0], color[1], color[2])
+      doc.roundedRect(x, yPos, cardW, 30, 3, 3, 'FD')
       doc.setFontSize(18)
-      doc.text(value as string, x + cardW / 2, 52, { align: 'center' })
+      doc.setTextColor(color[0], color[1], color[2])
+      doc.text(value, x + cardW / 2, yPos + 14, { align: 'center' })
       doc.setFontSize(9)
       doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2])
-      doc.text(label as string, x + cardW / 2, 64, { align: 'center' })
+      doc.text(label, x + cardW / 2, yPos + 26, { align: 'center' })
     })
+    yPos += 42
 
-    // Key stats table
-    const stats = [
-      ['Total Departments Registered', `${departments.length}`],
-      ['Departments that Submitted', `${deptNames.length}`],
-      ['Total Submissions Received', `${submissions.length}`],
-      ['Total Students Enrolled', `${totalStudents}`],
-      ['Unique Project Titles', `${uniqueProjects}`],
-      ['Average Students / Submission', `${(totalStudents / submissions.length).toFixed(1)}`],
-    ]
     autoTable(doc, {
-      startY: 80,
-      head: [['Key Performance Indicators', 'Value']],
-      body: stats,
-      theme: 'striped',
-      headStyles: { fillColor: PURPLE_MID, fontSize: 12, halign: 'center' },
-      bodyStyles: { fontSize: 11 },
-      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 160 }, 1: { halign: 'center', cellWidth: 60 } },
+      startY: yPos,
+      head: [['Key Performance Indicator', 'Value']],
+      body: [
+        ['Departments Registered', `${departments.length}`],
+        ['Departments with Submissions', `${deptNames.length}`],
+        ['Total Submissions', `${submissions.length}`],
+        ['Total Students', `${totalStudents}`],
+        ['Unique Projects', `${uniqueProjects}`],
+        ['Avg Students per Submission', `${(totalStudents / submissions.length).toFixed(1)}`],
+        ['Avg Submissions per Dept', `${(submissions.length / Math.max(deptNames.length, 1)).toFixed(1)}`],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: PURPLE_MID, fontSize: 10, halign: 'center' },
+      bodyStyles: { fontSize: 9 },
+      columnStyles: { 0: { cellWidth: 160 }, 1: { halign: 'center', cellWidth: 50 } },
       margin: { left: 16, right: 16 },
       tableLineColor: PURPLE_LIGHT,
-      tableLineWidth: 0.5,
+      tableLineWidth: 0.3,
+    })
+    yPos = (doc as any).lastAutoTable.finalY + 16
+
+    // Department breakdown table
+    doc.setFontSize(12)
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2])
+    doc.text('Submissions by Department', 16, yPos)
+    yPos += 8
+
+    const deptRows = deptNames.map(dept => {
+      const subs = grouped[dept]
+      const deptInfo = departments.find(d => d.department === dept)
+      return [
+        dept,
+        deptInfo?.rep_name || '\u2014',
+        `${subs.length}`,
+        `${subs.reduce((a, s) => a + s.members.length, 0)}`,
+      ]
     })
 
-    // ==================== FULL HIERARCHICAL REPORT ====================
-    doc.addPage()
-    doc.setFillColor(PURPLE_DARK[0], PURPLE_DARK[1], PURPLE_DARK[2])
-    doc.rect(0, 0, pw, 28, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(18)
-    doc.text('Full Departmental Report', 16, 19)
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Department', 'Class Rep', 'Submissions', 'Students']],
+      body: deptRows,
+      theme: 'striped',
+      headStyles: { fillColor: PURPLE_DARK, fontSize: 9, halign: 'center' },
+      bodyStyles: { fontSize: 9 },
+      columnStyles: { 0: { cellWidth: 100 }, 1: { cellWidth: 60 }, 2: { halign: 'center', cellWidth: 30 }, 3: { halign: 'center', cellWidth: 30 } },
+      margin: { left: 16, right: 16 },
+      alternateRowStyles: { fillColor: CARD_BG },
+      tableLineColor: [200, 190, 220],
+      tableLineWidth: 0.2,
+    })
 
-    let yPos = 36
+    drawFooter(2)
+
+    // ===== DETAILED REPORT =====
+    addSectionPage('Detailed Departmental Report')
+
+    yPos = 36
+    let pageNum = 3
 
     deptNames.forEach((dept) => {
       const deptSubs = grouped[dept]
       const deptInfo = departments.find(d => d.department === dept)
 
-      // Check page break
-      if (yPos > ph - 80) {
-        doc.setFontSize(8)
-        doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
-        doc.text(`COS-102 Project Hub Report \u2014 Page ${(doc as any).getNumberOfPages()}`, pw / 2, ph - 10, { align: 'center' })
-        doc.addPage()
-        yPos = 16
+      if (yPos > ph - 70) {
+        drawFooter(pageNum)
+        addSectionPage('Detailed Departmental Report (cont.)')
+        yPos = 36
+        pageNum++
       }
 
-      // Department header bar
       doc.setFillColor(PURPLE_MID[0], PURPLE_MID[1], PURPLE_MID[2])
-      doc.roundedRect(12, yPos, pw - 24, 12, 3, 3, 'F')
+      doc.roundedRect(12, yPos, pw - 24, 10, 3, 3, 'F')
       doc.setTextColor(255, 255, 255)
-      doc.setFontSize(13)
-      doc.text(dept, 18, yPos + 8)
-      yPos += 18
+      doc.setFontSize(12)
+      doc.text(`  ${dept}`, 18, yPos + 7)
+      yPos += 16
 
       if (deptInfo) {
         doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2])
-        doc.setFontSize(9)
-        doc.text(`Class Rep: ${deptInfo.rep_name}  |  ${deptInfo.rep_email}  |  ${deptInfo.rep_phone || '\u2014'}`, 18, yPos)
-        yPos += 10
+        doc.setFontSize(8)
+        doc.text(`Class Rep: ${deptInfo.rep_name}  \u2022  ${deptInfo.rep_email}  \u2022  ${deptInfo.rep_phone || '\u2014'}`, 20, yPos)
+        yPos += 8
       }
 
-      // Sort submissions by group number
       const sortedSubs = [...deptSubs].sort((a, b) => a.group_number - b.group_number)
 
       sortedSubs.forEach((s) => {
-        if (yPos > ph - 90) {
-          doc.setFontSize(8)
-          doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
-          doc.text(`COS-102 Project Hub Report \u2014 Page ${(doc as any).getNumberOfPages()}`, pw / 2, ph - 10, { align: 'center' })
-          doc.addPage()
-          yPos = 16
+        if (yPos > ph - 80) {
+          drawFooter(pageNum)
+          addSectionPage('Detailed Departmental Report (cont.)')
+          yPos = 36
+          pageNum++
         }
 
-        // Group header
         doc.setFillColor(PURPLE_LIGHT[0], PURPLE_LIGHT[1], PURPLE_LIGHT[2])
-        doc.roundedRect(18, yPos, pw - 36, 10, 2, 2, 'F')
+        doc.roundedRect(18, yPos, pw - 36, 8, 2, 2, 'F')
         doc.setTextColor(255, 255, 255)
-        doc.setFontSize(11)
-        doc.text(`Group ${s.group_number} \u2014 ${s.project_name}`, 24, yPos + 7)
-        yPos += 15
+        doc.setFontSize(10)
+        doc.text(`Group ${s.group_number}  \u2014  ${s.project_name}`, 24, yPos + 6)
+        yPos += 12
 
-        // Leader and project details
-        doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2])
-        doc.setFontSize(9)
-        doc.text(`Leader: ${s.leader_name}  |  ${s.leader_email}  |  ${s.leader_phone || '\u2014'}`, 24, yPos)
-        yPos += 5
+        const infoColor = [70, 70, 85]
+        doc.setTextColor(infoColor[0], infoColor[1], infoColor[2])
         doc.setFontSize(8)
-        doc.setTextColor(80, 80, 100)
+        doc.text(`Leader: ${s.leader_name}  \u2022  ${s.leader_email}  \u2022  ${s.leader_phone || '\u2014'}`, 24, yPos)
+        yPos += 4
         doc.text(`GitHub: ${s.github_link}`, 24, yPos)
         yPos += 4
         if (s.notes) {
@@ -284,9 +354,8 @@ export default function AdminPage() {
         }
         doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
         doc.text(`Submitted: ${new Date(s.submitted_at).toLocaleString()}`, 24, yPos)
-        yPos += 7
+        yPos += 6
 
-        // Members table
         const members = Array.isArray(s.members) ? s.members : []
         if (members.length > 0) {
           const memberRows: any[][] = []
@@ -310,40 +379,40 @@ export default function AdminPage() {
             head: [['#', 'Student Name', 'Matric No.']],
             body: memberRows,
             theme: 'striped',
-            headStyles: { fillColor: PURPLE_DARK, fontSize: 9 },
+            headStyles: { fillColor: PURPLE_DARK, fontSize: 8, halign: 'center' },
             bodyStyles: { fontSize: 8 },
             columnStyles: {
-              0: { cellWidth: 12, halign: 'center' },
+              0: { cellWidth: 10, halign: 'center' },
               1: { cellWidth: 100 },
-              2: { cellWidth: 50, halign: 'center' },
+              2: { cellWidth: 45, halign: 'center' },
             },
             margin: { left: 24, right: 16 },
-            alternateRowStyles: { fillColor: [248, 245, 255] },
-            tableLineColor: [200, 190, 220],
-            tableLineWidth: 0.2,
+            alternateRowStyles: { fillColor: CARD_BG },
+            tableLineColor: [210, 200, 230],
+            tableLineWidth: 0.15,
           })
-          yPos = (doc as any).lastAutoTable.finalY + 12
+          yPos = (doc as any).lastAutoTable.finalY + 8
         } else {
           doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
-          doc.setFontSize(9)
-          doc.text('No members listed for this group.', 24, yPos + 4)
-          yPos += 14
+          doc.setFontSize(8)
+          doc.text('No members listed.', 24, yPos + 4)
+          yPos += 10
         }
       })
     })
 
-    // ==================== PAGE FOOTER (all pages) ====================
-    const pageCount = (doc as any).getNumberOfPages()
-    for (let i = 1; i <= pageCount; i++) {
+    drawFooter(pageNum)
+
+    // ===== PAGE NUMBERS ON ALL PAGES =====
+    const totalPages = (doc as any).getNumberOfPages()
+    for (let i = 1; i <= totalPages; i++) {
       (doc as any).setPage(i)
       doc.setFontSize(8)
       doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
-      doc.text(
-        `COS-102 Project Hub Report \u2014 Page ${i} of ${pageCount}`,
-        pw / 2,
-        ph - 10,
-        { align: 'center' }
-      )
+      doc.text(`Page ${i} of ${totalPages}`, pw - 16, ph - 8, { align: 'right' })
+      doc.setDrawColor(200, 190, 220)
+      doc.line(16, ph - 12, pw - 16, ph - 12)
+      doc.text(`COS-102 Project Hub Report`, 16, ph - 8)
     }
 
     doc.save(`COS102-Project-Hub-Report-${Date.now()}.pdf`)
@@ -646,9 +715,23 @@ export default function AdminPage() {
                                 {/* Members */}
                                 <div style={{ padding: '10px 14px', fontSize: 13 }}>
                                   <div style={{ fontWeight: 600, color: 'var(--cyan)', marginBottom: 6, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>
-                                    Members ({submission ? submission.members.length : 0})
+                                    Members ({editingId === submission?.id ? editMembers.length : (submission ? submission.members.length : 0)})
                                   </div>
-                                  {submission && submission.members.length > 0 ? (
+                                  {submission && editingId === submission.id ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                      {editMembers.map((m, mi) => (
+                                        <div key={mi} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                          <span style={{ color: 'var(--text-3)', width: 20, textAlign: 'right', fontSize: 12 }}>{mi + 1}.</span>
+                                          <input className="input" value={m.name} onChange={e => updateMemberField(mi, 'name', e.target.value)}
+                                            style={{ flex: 1, fontSize: 12, padding: '3px 6px' }} placeholder="Full name" />
+                                          <input className="input" value={m.matric} onChange={e => updateMemberField(mi, 'matric', e.target.value)}
+                                            style={{ width: 110, fontSize: 12, padding: '3px 6px' }} placeholder="Matric" />
+                                          <button onClick={() => removeEditMember(mi)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 14, padding: '0 2px' }}>×</button>
+                                        </div>
+                                      ))}
+                                      <button onClick={addEditMember} style={{ background: 'none', border: '1px dashed var(--border)', borderRadius: 4, padding: '4px', fontSize: 11, cursor: 'pointer', color: 'var(--text-3)', textAlign: 'center' }}>+ Add</button>
+                                    </div>
+                                  ) : submission && submission.members.length > 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                       {submission.members.map((m: any, mi: number) => {
                                         let n: string, mat: string
@@ -676,11 +759,24 @@ export default function AdminPage() {
                                   )}
                                 </div>
 
-                                {/* Delete button for submission */}
+                                {/* Edit & Delete buttons for submission */}
                                 {submission && (
                                   <div style={{ padding: '6px 14px', borderTop: '1px solid var(--border)', textAlign: 'right' }}>
-                                    <button onClick={() => deleteSubmission(submission.id)}
-                                      className="btn btn-danger" style={{ fontSize: 10, padding: '3px 8px' }}>Delete Submission</button>
+                                    {editingId === submission.id ? (
+                                      <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                                        <button onClick={() => saveMembers(submission.id)}
+                                          className="btn btn-cyan" style={{ fontSize: 10, padding: '3px 8px' }}>Save</button>
+                                        <button onClick={cancelEdit}
+                                          className="btn btn-secondary" style={{ fontSize: 10, padding: '3px 8px' }}>Cancel</button>
+                                      </div>
+                                    ) : (
+                                      <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                                        <button onClick={() => startEdit(submission)}
+                                          className="btn btn-primary" style={{ fontSize: 10, padding: '3px 8px' }}>Edit Members</button>
+                                        <button onClick={() => deleteSubmission(submission.id)}
+                                          className="btn btn-danger" style={{ fontSize: 10, padding: '3px 8px' }}>Delete</button>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -775,8 +871,23 @@ export default function AdminPage() {
                           <td style={{ fontSize: 12 }}>{s.leader_name}</td>
                           <td><span className="mono" style={{ fontSize: 11 }}>{s.leader_email}</span></td>
                           <td style={{ fontSize: 11 }}>{s.leader_phone || '\u2014'}</td>
-                          <td style={{ fontSize: 11 }}>
-                            {fmtMembers(s.members)}
+                          <td style={{ fontSize: 11, maxWidth: 200 }}>
+                            {editingId === s.id ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                {editMembers.map((m, mi) => (
+                                  <div key={mi} style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                    <input className="input" value={m.name} onChange={e => updateMemberField(mi, 'name', e.target.value)}
+                                      style={{ width: 90, fontSize: 10, padding: '2px 4px' }} placeholder="Name" />
+                                    <input className="input" value={m.matric} onChange={e => updateMemberField(mi, 'matric', e.target.value)}
+                                      style={{ width: 70, fontSize: 10, padding: '2px 4px' }} placeholder="Matric" />
+                                    <button onClick={() => removeEditMember(mi)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>×</button>
+                                  </div>
+                                ))}
+                                <button onClick={addEditMember} style={{ background: 'none', border: '1px dashed var(--border)', borderRadius: 4, padding: '2px 6px', fontSize: 10, cursor: 'pointer', color: 'var(--text-3)', marginTop: 2 }}>+ Add</button>
+                              </div>
+                            ) : (
+                              fmtMembers(s.members)
+                            )}
                           </td>
                           <td style={{ fontSize: 11 }}>
                             <a href={s.github_link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--cyan-light)' }}>
@@ -790,13 +901,17 @@ export default function AdminPage() {
                             {new Date(s.submitted_at).toLocaleDateString()}
                           </td>
                           <td>
-                            <button
-                              onClick={() => deleteSubmission(s.id)}
-                              className="btn btn-danger"
-                              style={{ fontSize: 10, padding: '3px 8px' }}
-                            >
-                              Delete
-                            </button>
+                            {editingId === s.id ? (
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <button onClick={() => saveMembers(s.id)} className="btn btn-cyan" style={{ fontSize: 10, padding: '3px 6px' }}>Save</button>
+                                <button onClick={cancelEdit} className="btn btn-secondary" style={{ fontSize: 10, padding: '3px 6px' }}>Cancel</button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <button onClick={() => startEdit(s)} className="btn btn-primary" style={{ fontSize: 10, padding: '3px 6px' }}>Edit</button>
+                                <button onClick={() => deleteSubmission(s.id)} className="btn btn-danger" style={{ fontSize: 10, padding: '3px 6px' }}>Delete</button>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -827,44 +942,63 @@ export default function AdminPage() {
                             Phone: {s.leader_phone || '\u2014'}
                           </p>
                         </div>
-                        <button
-                          onClick={() => deleteSubmission(s.id)}
-                          className="btn btn-danger"
-                          style={{ fontSize: 11, padding: '5px 12px', flexShrink: 0 }}
-                        >
-                          Delete
-                        </button>
+                        {editingId === s.id ? (
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            <button onClick={() => saveMembers(s.id)} className="btn btn-cyan" style={{ fontSize: 11, padding: '5px 10px' }}>Save</button>
+                            <button onClick={cancelEdit} className="btn btn-secondary" style={{ fontSize: 11, padding: '5px 10px' }}>Cancel</button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            <button onClick={() => startEdit(s)} className="btn btn-primary" style={{ fontSize: 11, padding: '5px 10px' }}>Edit Members</button>
+                            <button onClick={() => deleteSubmission(s.id)} className="btn btn-danger" style={{ fontSize: 11, padding: '5px 10px' }}>Delete</button>
+                          </div>
+                        )}
                       </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
                           <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 1 }}>
-                            Members ({s.members.length})
+                            Members ({editingId === s.id ? editMembers.length : s.members.length})
                           </p>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                            {s.members.map((m, idx) => {
-                              let n: string, mat: string
-                              if (typeof m === 'string') {
-                                const parsed = parseMatric(m)
-                                n = parsed.name; mat = parsed.matric
-                              } else {
-                                n = m.name || ''; mat = m.matric || ''
-                                if (!mat && n) {
-                                  const parsed = parseMatric(n)
+                          {editingId === s.id ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              {editMembers.map((m, mi) => (
+                                <div key={mi} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                  <input className="input" value={m.name} onChange={e => updateMemberField(mi, 'name', e.target.value)}
+                                    style={{ flex: 1, fontSize: 12, padding: '4px 8px' }} placeholder="Full name" />
+                                  <input className="input" value={m.matric} onChange={e => updateMemberField(mi, 'matric', e.target.value)}
+                                    style={{ width: 120, fontSize: 12, padding: '4px 8px' }} placeholder="Matric No." />
+                                  <button onClick={() => removeEditMember(mi)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 16, padding: '0 4px' }}>×</button>
+                                </div>
+                              ))}
+                              <button onClick={addEditMember} style={{ background: 'none', border: '1px dashed var(--border)', borderRadius: 6, padding: '6px', fontSize: 12, cursor: 'pointer', color: 'var(--text-3)', textAlign: 'center' }}>+ Add Member</button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                              {s.members.map((m, idx) => {
+                                let n: string, mat: string
+                                if (typeof m === 'string') {
+                                  const parsed = parseMatric(m)
                                   n = parsed.name; mat = parsed.matric
+                                } else {
+                                  n = m.name || ''; mat = m.matric || ''
+                                  if (!mat && n) {
+                                    const parsed = parseMatric(n)
+                                    n = parsed.name; mat = parsed.matric
+                                  }
                                 }
-                              }
-                              return (
-                                <span key={n + mat || idx} style={{
-                                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                                  background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.15)',
-                                  padding: '3px 10px', borderRadius: 8, fontSize: 12,
-                                }}>
-                                  <span style={{ color: 'var(--text)' }}>{n}</span>
-                                  {mat && <span className="mono" style={{ fontSize: 10 }}>{mat}</span>}
-                                </span>
-                              )
-                            })}
-                          </div>
+                                return (
+                                  <span key={n + mat || idx} style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                                    background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.15)',
+                                    padding: '3px 10px', borderRadius: 8, fontSize: 12,
+                                  }}>
+                                    <span style={{ color: 'var(--text)' }}>{n}</span>
+                                    {mat && <span className="mono" style={{ fontSize: 10 }}>{mat}</span>}
+                                  </span>
+                                )
+                              })}
+                            </div>
+                          )}
                         </div>
 
                       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
