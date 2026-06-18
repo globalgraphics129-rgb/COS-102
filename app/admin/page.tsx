@@ -61,6 +61,11 @@ export default function AdminPage() {
   const [editDept, setEditDept] = useState<Department | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editForm, setEditForm] = useState({ department: '', rep_name: '', rep_email: '', rep_phone: '', number_of_groups: 1 })
+  const [emailDept, setEmailDept] = useState<Department | null>(null)
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailMessage, setEmailMessage] = useState('')
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   const login = () => {
     if (pw === ADMIN_PASSWORD) { setAuthed(true); loadData() }
@@ -168,6 +173,46 @@ export default function AdminPage() {
       setEditDept(null)
       toast.success('Department updated')
     } catch { toast.error('Failed to update') }
+  }
+
+  const openEmailModal = (d: Department) => {
+    setEmailDept(d)
+    setEmailSubject(`Re: ${d.department} Registration — COS 102 Project Hub`)
+    setEmailMessage(`Hi ${d.rep_name},
+
+I'm writing regarding your registration of ${d.department} on the COS 102 Project Hub.
+
+`)
+    setShowEmailModal(true)
+  }
+
+  const sendDeptEmail = async () => {
+    if (!emailDept || !emailSubject || !emailMessage) {
+      toast.error('Subject and message are required')
+      return
+    }
+    setSendingEmail(true)
+    try {
+      const res = await fetch('/api/admin/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toEmail: emailDept.rep_email,
+          toName: emailDept.rep_name,
+          subject: emailSubject,
+          message: emailMessage,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        toast.error(err.error || 'Failed to send')
+        return
+      }
+      toast.success('Email sent')
+      setShowEmailModal(false)
+      setEmailDept(null)
+    } catch { toast.error('Failed to send email') }
+    finally { setSendingEmail(false) }
   }
 
   const startEdit = (s: Submission) => {
@@ -897,6 +942,8 @@ export default function AdminPage() {
                           </span>
                           <button onClick={(e) => { e.stopPropagation(); openEditModal(d) }}
                             className="btn btn-secondary" style={{ fontSize: 10, padding: '3px 8px' }}>Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); openEmailModal(d) }}
+                            className="btn btn-cyan" style={{ fontSize: 10, padding: '3px 8px' }}>Send Email</button>
                           <button onClick={(e) => { e.stopPropagation(); deleteDepartment(d.id) }}
                             className="btn btn-danger" style={{ fontSize: 10, padding: '3px 8px' }}>Delete</button>
                         </div>
@@ -1352,6 +1399,59 @@ export default function AdminPage() {
               </button>
               <button onClick={saveEdit} className="btn btn-primary">
                 Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Email Modal */}
+      {showEmailModal && emailDept && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setShowEmailModal(false)}
+        >
+          <div
+            className="card"
+            style={{ width: '100%', maxWidth: 560, margin: 24 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Send Email</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 20 }}>
+              To: {emailDept.rep_name} &lt;{emailDept.rep_email}&gt; — {emailDept.department}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label className="label">Subject</label>
+                <input
+                  className="input"
+                  value={emailSubject}
+                  onChange={e => setEmailSubject(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label">Message</label>
+                <textarea
+                  className="input"
+                  rows={10}
+                  value={emailMessage}
+                  onChange={e => setEmailMessage(e.target.value)}
+                  style={{ resize: 'vertical', minHeight: 160, fontFamily: 'inherit', lineHeight: 1.6 }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowEmailModal(false)} className="btn btn-secondary" disabled={sendingEmail}>
+                Cancel
+              </button>
+              <button onClick={sendDeptEmail} className="btn btn-cyan" disabled={sendingEmail}>
+                {sendingEmail ? <><span className="spinner" /> Sending...</> : 'Send Email'}
               </button>
             </div>
           </div>

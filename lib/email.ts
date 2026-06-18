@@ -154,3 +154,21 @@ export async function sendProjectSubmissionEmail({
     htmlContent: baseTemplate('Project Submitted', content, '🚀'),
   })
 }
+
+export async function sendCustomAdminEmail({
+  toEmail, toName, subject, message
+}: {
+  toEmail: string; toName: string; subject: string; message: string
+}) {
+  const content = `
+    <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:24px;margin:16px 0;">
+      <p class="text" style="white-space:pre-wrap;line-height:1.8;">${message}</p>
+    </div>
+    <p class="support-text">This message was sent to you by the COS 102 admin. Reply to this email if you have questions.</p>
+  `
+  return sendEmail({
+    to: [{ email: toEmail, name: toName }],
+    subject,
+    htmlContent: baseTemplate('Message from Admin', content, '📬'),
+  })
+}
