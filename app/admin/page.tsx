@@ -1540,7 +1540,7 @@ I'm writing regarding your registration of ${d.department} on the COS 102 Projec
               <div className="card" style={{ maxWidth: 500, padding: 24 }}>
                 <p style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 20, lineHeight: 1.6 }}>
                   Set a date and time for the portal to automatically close. When you save, all registered users
-                  will be emailed the deadline. When the timer reaches zero, users will be notified and you'll
+                  will be emailed the deadline. When the timer reaches zero, users will be notified and you&apos;ll
                   receive the final submission report.
                 </p>
 
