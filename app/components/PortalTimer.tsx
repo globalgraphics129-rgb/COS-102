@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react'
 
 export default function PortalTimer() {
   const [closesAt, setClosesAt] = useState<string | null>(null)
-  const [remaining, setRemaining] = useState<number>(0)
-  const [closed, setClosed] = useState(false)
+  const [remaining, setRemaining] = useState<number>(-1)
   const [notifiedClose, setNotifiedClose] = useState(false)
 
   useEffect(() => {
@@ -21,15 +20,12 @@ export default function PortalTimer() {
       const diff = new Date(closesAt).getTime() - Date.now()
       if (diff <= 0) {
         setRemaining(0)
-        setClosed(true)
-        // Trigger portal close notification once
         if (!notifiedClose) {
           setNotifiedClose(true)
           fetch('/api/admin/portal-close', { method: 'POST' }).catch(() => {})
         }
       } else {
         setRemaining(diff)
-        setClosed(false)
       }
     }
 
@@ -38,7 +34,8 @@ export default function PortalTimer() {
     return () => clearInterval(interval)
   }, [closesAt, notifiedClose])
 
-  if (!closesAt || remaining <= 0) return null
+  if (!closesAt || remaining < 0) return null
+  if (remaining <= 0) return null
 
   const days = Math.floor(remaining / 86400000)
   const hours = Math.floor((remaining % 86400000) / 3600000)
