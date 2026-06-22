@@ -26,6 +26,10 @@ interface Submission {
   submitted_at: string; department: string;
 }
 
+interface ProjectInfo {
+  id: string; name: string; description: string | null;
+  active: boolean; created_at: string;
+}
 interface StudentEntry {
   submissionId: string
   memberIndex: number
@@ -84,6 +88,12 @@ export default function AdminPage() {
   const [announceSubject, setAnnounceSubject] = useState('')
   const [announceMessage, setAnnounceMessage] = useState('')
   const [sendingAnnounce, setSendingAnnounce] = useState(false)
+  const [projects, setProjects] = useState<ProjectInfo[]>([])
+  const [showCreateProject, setShowCreateProject] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
+  const [newProjectDesc, setNewProjectDesc] = useState('')
+  const [creatingProject, setCreatingProject] = useState(false)
+  const [clearingProject, setClearingProject] = useState<string | null>(null)
 
   const login = () => {
     if (pw === ADMIN_PASSWORD) { setAuthed(true); loadData() }
@@ -102,11 +112,20 @@ export default function AdminPage() {
       setDepartments(dData.departments || [])
       setSubmissions(sData.submissions || [])
       loadTimerSettings()
+      loadProjects()
     } catch {
       toast.error('Failed to load data')
     } finally {
       setLoading(false)
     }
+  }
+
+  const loadProjects = async () => {
+    try {
+      const res = await fetch('/api/admin/projects')
+      const data = await res.json()
+      setProjects(data.projects || [])
+    } catch {}
   }
 
   const loadDeptGroups = async (deptId: string) => {
@@ -399,6 +418,50 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
     finally { setSavingTimer(false) }
   }
 
+  const createProject = async () => {
+    if (!newProjectName.trim()) { toast.error('Project name is required'); return }
+    setCreatingProject(true)
+    try {
+      const res = await fetch('/api/admin/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newProjectName.trim(), description: newProjectDesc.trim() || null }),
+      })
+      if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed'); return }
+      toast.success('Project created!')
+      setShowCreateProject(false)
+      setNewProjectName('')
+      setNewProjectDesc('')
+      loadProjects()
+    } catch { toast.error('Failed to create project') }
+    finally { setCreatingProject(false) }
+  }
+
+  const activateProject = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/projects?id=${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: true }),
+      })
+      if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed'); return }
+      toast.success('Project activated')
+      loadProjects()
+    } catch { toast.error('Failed to activate') }
+  }
+
+  const clearProjectData = async (id: string) => {
+    if (!confirm('This will permanently delete all departments, groups, and submissions for this project. Are you sure?')) return
+    setClearingProject(id)
+    try {
+      const res = await fetch(`/api/admin/projects/clear?id=${id}`, { method: 'DELETE' })
+      if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed'); return }
+      toast.success('Project data cleared')
+      loadProjects()
+    } catch { toast.error('Failed to clear data') }
+    finally { setClearingProject(null) }
+  }
+
   const startEdit = (s: Submission) => {
     setEditingId(s.id)
     setEditMembers(s.members.map(m => ({ ...m })))
@@ -510,13 +573,13 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
     const pw = doc.internal.pageSize.getWidth()
     const ph = doc.internal.pageSize.getHeight()
 
-    const PURPLE_DARK: [number, number, number] = [40, 20, 80]
-    const PURPLE_MID: [number, number, number] = [90, 50, 200]
-    const PURPLE_LIGHT: [number, number, number] = [130, 90, 230]
-    const CYAN: [number, number, number] = [0, 190, 220]
-    const CARD_BG: [number, number, number] = [248, 246, 255]
-    const TEXT_MUTED: [number, number, number] = [140, 140, 160]
-    const TEXT_DARK: [number, number, number] = [50, 50, 60]
+    const DARK: [number, number, number] = [5, 80, 70]
+    const MID: [number, number, number] = [5, 150, 105]
+    const LIGHT: [number, number, number] = [13, 148, 136]
+    const ACCENT: [number, number, number] = [20, 200, 190]
+    const CARD_BG: [number, number, number] = [236, 253, 245]
+    const TEXT_MUTED: [number, number, number] = [100, 130, 120]
+    const TEXT_DARK: [number, number, number] = [30, 50, 40]
 
     const totalStudents = submissions.reduce((a, s) => a + s.members.length, 0)
     const uniqueProjects = new Set(submissions.map(s => s.project_name)).size
@@ -538,7 +601,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
 
     const addSectionPage = (title: string) => {
       doc.addPage()
-      doc.setFillColor(PURPLE_DARK[0], PURPLE_DARK[1], PURPLE_DARK[2])
+      doc.setFillColor(DARK[0], DARK[1], DARK[2])
       doc.rect(0, 0, pw, 24, 'F')
       doc.setTextColor(255, 255, 255)
       doc.setFontSize(16)
@@ -546,16 +609,16 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
     }
 
     // ===== COVER PAGE =====
-    doc.setFillColor(PURPLE_DARK[0], PURPLE_DARK[1], PURPLE_DARK[2])
+    doc.setFillColor(DARK[0], DARK[1], DARK[2])
     doc.rect(0, 0, pw, ph, 'F')
-    doc.setFillColor(CYAN[0], CYAN[1], CYAN[2])
+    doc.setFillColor(ACCENT[0], ACCENT[1], ACCENT[2])
     doc.rect(0, ph / 2 - 40, pw, 2, 'F')
     doc.rect(0, ph / 2 + 36, pw, 1, 'F')
     doc.setTextColor(255, 255, 255)
     doc.setFontSize(36)
     doc.text('AcademiHub', pw / 2, ph / 2 - 18, { align: 'center' })
     doc.setFontSize(22)
-    doc.setTextColor(CYAN[0], CYAN[1], CYAN[2])
+    doc.setTextColor(ACCENT[0], ACCENT[1], ACCENT[2])
     doc.text('Submissions Report', pw / 2, ph / 2 + 10, { align: 'center' })
     doc.setFontSize(11)
     doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2])
@@ -569,10 +632,10 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
 
     const cardW = (pw - 56) / 4
     const metrics: [string, string, [number, number, number]][] = [
-      ['Departments', `${deptNames.length}`, PURPLE_MID],
-      ['Submissions', `${submissions.length}`, PURPLE_LIGHT],
-      ['Students', `${totalStudents}`, CYAN],
-      ['Projects', `${uniqueProjects}`, [240, 180, 50]],
+      ['Departments', `${deptNames.length}`, MID],
+      ['Submissions', `${submissions.length}`, LIGHT],
+      ['Students', `${totalStudents}`, ACCENT],
+      ['Projects', `${uniqueProjects}`, [245, 180, 50]],
     ]
     metrics.forEach(([label, value, color], i) => {
       const x = 16 + i * (cardW + 8)
@@ -601,11 +664,11 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
         ['Avg Submissions per Dept', `${(submissions.length / Math.max(deptNames.length, 1)).toFixed(1)}`],
       ],
       theme: 'grid',
-      headStyles: { fillColor: PURPLE_MID, fontSize: 10, halign: 'center' },
+      headStyles: { fillColor: MID, fontSize: 10, halign: 'center' },
       bodyStyles: { fontSize: 9 },
       columnStyles: { 0: { cellWidth: 160 }, 1: { halign: 'center', cellWidth: 50 } },
       margin: { left: 16, right: 16 },
-      tableLineColor: PURPLE_LIGHT,
+      tableLineColor: LIGHT,
       tableLineWidth: 0.3,
     })
     yPos = (doc as any).lastAutoTable.finalY + 16
@@ -632,12 +695,12 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
       head: [['Department', 'Class Rep', 'Submissions', 'Students']],
       body: deptRows,
       theme: 'striped',
-      headStyles: { fillColor: PURPLE_DARK, fontSize: 9, halign: 'center' },
+      headStyles: { fillColor: DARK, fontSize: 9, halign: 'center' },
       bodyStyles: { fontSize: 9 },
       columnStyles: { 0: { cellWidth: 100 }, 1: { cellWidth: 60 }, 2: { halign: 'center', cellWidth: 30 }, 3: { halign: 'center', cellWidth: 30 } },
       margin: { left: 16, right: 16 },
       alternateRowStyles: { fillColor: CARD_BG },
-      tableLineColor: [200, 190, 220],
+      tableLineColor: [5, 150, 105],
       tableLineWidth: 0.2,
     })
 
@@ -660,7 +723,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
         pageNum++
       }
 
-      doc.setFillColor(PURPLE_MID[0], PURPLE_MID[1], PURPLE_MID[2])
+      doc.setFillColor(MID[0], MID[1], MID[2])
       doc.roundedRect(12, yPos, pw - 24, 10, 3, 3, 'F')
       doc.setTextColor(255, 255, 255)
       doc.setFontSize(12)
@@ -684,7 +747,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
           pageNum++
         }
 
-        doc.setFillColor(PURPLE_LIGHT[0], PURPLE_LIGHT[1], PURPLE_LIGHT[2])
+        doc.setFillColor(LIGHT[0], LIGHT[1], LIGHT[2])
         doc.roundedRect(18, yPos, pw - 36, 8, 2, 2, 'F')
         doc.setTextColor(255, 255, 255)
         doc.setFontSize(10)
@@ -729,7 +792,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
             head: [['#', 'Student Name', 'Matric No.']],
             body: memberRows,
             theme: 'striped',
-            headStyles: { fillColor: PURPLE_DARK, fontSize: 8, halign: 'center' },
+            headStyles: { fillColor: DARK, fontSize: 8, halign: 'center' },
             bodyStyles: { fontSize: 8 },
             columnStyles: {
               0: { cellWidth: 10, halign: 'center' },
@@ -780,7 +843,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
       head: [['#', 'Student Name', 'Matric No.', 'Group', 'Department']],
       body: allStudents,
       theme: 'striped',
-      headStyles: { fillColor: PURPLE_DARK, fontSize: 9, halign: 'center' },
+      headStyles: { fillColor: DARK, fontSize: 9, halign: 'center' },
       bodyStyles: { fontSize: 8 },
       columnStyles: {
         0: { cellWidth: 10, halign: 'center' },
@@ -1614,6 +1677,83 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
             </div>
           )}
 
+          {tab === 'projects' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.5 }}>Projects</h2>
+                <button onClick={() => setShowCreateProject(true)} className="btn btn-primary" style={{ fontSize: 13 }}>
+                  + New Project
+                </button>
+              </div>
+
+              {showCreateProject && (
+                <div className="card" style={{ padding: 24, marginBottom: 24 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Create New Project</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div>
+                      <label className="label">Project / Course Name *</label>
+                      <input className="input" value={newProjectName} onChange={e => setNewProjectName(e.target.value)}
+                        placeholder="e.g. COS 201 Data Structures" />
+                    </div>
+                    <div>
+                      <label className="label">Description (optional)</label>
+                      <textarea className="input" value={newProjectDesc} onChange={e => setNewProjectDesc(e.target.value)}
+                        placeholder="Brief description of this project..."
+                        style={{ minHeight: 80, resize: 'vertical' }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
+                    <button onClick={() => { setShowCreateProject(false); setNewProjectName(''); setNewProjectDesc('') }}
+                      className="btn btn-secondary">Cancel</button>
+                    <button onClick={createProject} className="btn btn-primary" disabled={creatingProject}>
+                      {creatingProject ? <><span className="spinner" /> Creating...</> : 'Create Project'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {projects.map(p => {
+                  const isActive = p.active
+                  return (
+                    <div key={p.id} className="card" style={{
+                      padding: '16px 20px',
+                      border: isActive ? '2px solid var(--primary)' : '1px solid var(--border)',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12,
+                    }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 16, fontWeight: 700 }}>{p.name}</span>
+                          {isActive && <span className="badge badge-violet">Active</span>}
+                        </div>
+                        {p.description && <p style={{ fontSize: 12, color: 'var(--text-3)' }}>{p.description}</p>}
+                        <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+                          Created: {new Date(p.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {!isActive && (
+                          <button onClick={() => activateProject(p.id)} className="btn btn-primary" style={{ fontSize: 12, padding: '6px 12px' }}>
+                            Activate
+                          </button>
+                        )}
+                        <button onClick={() => clearProjectData(p.id)} className="btn btn-danger" style={{ fontSize: 12, padding: '6px 12px' }}
+                          disabled={clearingProject === p.id}>
+                          {clearingProject === p.id ? <><span className="spinner" /> Clearing...</> : 'Clear Data'}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+                {projects.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-3)' }}>
+                    <p>No projects yet. Create your first project to get started.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {tab === 'settings' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -1673,6 +1813,21 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                   {existingTimer && (
                     <button onClick={clearTimer} className="btn btn-danger" disabled={savingTimer}>
                       Clear Timer
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="card" style={{ maxWidth: 500, padding: 24, marginTop: 20 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Portal Status</h3>
+                <p style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 16, lineHeight: 1.6 }}>
+                  The portal is currently {existingTimer && new Date(existingTimer).getTime() > Date.now() ? 'set to close on a timer' : existingTimer ? 'closed' : 'open'}. 
+                  Click below to immediately open or close the portal.
+                </p>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {existingTimer && (
+                    <button onClick={clearTimer} className="btn btn-cyan" disabled={savingTimer}>
+                      Open Portal Now
                     </button>
                   )}
                 </div>
