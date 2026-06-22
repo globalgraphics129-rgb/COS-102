@@ -2,41 +2,28 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import ThemeToggle from './components/ThemeToggle'
-
-const DEPARTMENTS = [
-  'Computer Science', 'Electrical Engineering', 'Mechanical Engineering',
-  'Civil Engineering', 'Biochemistry', 'Physics', 'Mathematics',
-  'Mass Communication', 'Business Administration', 'Accounting'
-]
-
-function AnimatedCounter({ target }: { target: number }) {
-  const [count, setCount] = useState(0)
-  useEffect(() => {
-    const step = Math.ceil(target / 40)
-    const interval = setInterval(() => {
-      setCount(prev => {
-        if (prev + step >= target) { clearInterval(interval); return target }
-        return prev + step
-      })
-    }, 30)
-    return () => clearInterval(interval)
-  }, [target])
-  return <span>{count}</span>
-}
+import { GraduationCap, Users, Rocket, Building2, ChevronRight, Lock, Unlock, ArrowRight } from 'lucide-react'
 
 export default function Home() {
   const [mounted, setMounted] = useState(false)
   const [portalOpen, setPortalOpen] = useState(true)
-  const [closesAt, setClosesAt] = useState<string | null>(null)
+  const [registeredDepts, setRegisteredDepts] = useState<string[]>([])
 
   useEffect(() => {
     setMounted(true)
     fetch('/api/portal-settings')
       .then(r => r.json())
       .then(data => {
-        setClosesAt(data.closes_at)
         if (data.closes_at) {
           setPortalOpen(new Date(data.closes_at).getTime() > Date.now())
+        }
+      })
+      .catch(() => {})
+    fetch('/api/register-department')
+      .then(r => r.json())
+      .then(data => {
+        if (data.departments) {
+          setRegisteredDepts(data.departments.map((d: any) => d.department))
         }
       })
       .catch(() => {})
@@ -47,7 +34,7 @@ export default function Home() {
       <nav className="nav">
         <div className="nav-inner">
           <div className="nav-logo">
-            <div className="nav-logo-icon">{'\uD83C\uDF93'}</div>
+            <div className="nav-logo-icon"><GraduationCap size={20} /></div>
             <span className="nav-logo-text gradient-text">AcademiHub</span>
           </div>
           <div className="nav-links">
@@ -58,7 +45,7 @@ export default function Home() {
             <ThemeToggle />
             <Link href="/login" className="nav-link">Sign In</Link>
             <Link href="/admin" className="btn btn-secondary" style={{ fontSize: 13, padding: '7px 14px' }}>
-              Admin →
+              Admin <ArrowRight size={14} />
             </Link>
           </div>
         </div>
@@ -71,7 +58,8 @@ export default function Home() {
           textAlign: 'center',
         }}>
           <span style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>
-            {'\uD83D\uDD12'} Submissions are now closed. The portal is no longer accepting projects.
+            <Lock size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
+            Submissions are now closed. The portal is no longer accepting projects.
           </span>
         </div>
       )}
@@ -118,13 +106,16 @@ export default function Home() {
           animation: mounted ? 'fade-up 0.6s 0.3s ease both' : 'none', opacity: 0
         }}>
           <Link href="/register-department" className="btn btn-primary" style={{ fontSize: 15, padding: '14px 28px' }}>
-            {'\uD83C\uDFDB\uFE0F'} Class Rep Access
+            <Building2 size={18} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+            Class Rep Access
           </Link>
           <Link href="/register-group" className="btn btn-secondary" style={{ fontSize: 15, padding: '14px 28px' }}>
-            {'\uD83D\uDC65'} Register Group
+            <Users size={18} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+            Register Group
           </Link>
           <Link href="/submit" className="btn btn-cyan" style={{ fontSize: 15, padding: '14px 28px' }}>
-            {'\uD83D\uDE80'} Submit Project
+            <Rocket size={18} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+            Submit Project
           </Link>
         </div>
       </section>
@@ -138,17 +129,17 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
             {[
               {
-                step: '01', icon: '\uD83C\uDFDB\uFE0F', title: 'Class Rep Registers',
+                step: '01', icon: Building2, title: 'Class Rep Registers',
                 desc: 'Class rep registers the department and specifies how many groups are in the class.',
                 color: 'var(--primary)', link: '/register-department', cta: 'Register Department'
               },
               {
-                step: '02', icon: '\uD83D\uDC65', title: 'Groups Sign Up',
+                step: '02', icon: Users, title: 'Groups Sign Up',
                 desc: 'Group leaders select their department, pick their group number, and list all members.',
                 color: 'var(--secondary)', link: '/register-group', cta: 'Register Group'
               },
               {
-                step: '03', icon: '\uD83D\uDE80', title: 'Submit Project',
+                step: '03', icon: Rocket, title: 'Submit Project',
                 desc: 'Leaders submit the project name, GitHub repo link, and final details. Everyone gets a confirmation.',
                 color: '#10b981', link: '/submit', cta: 'Submit Now'
               },
@@ -159,14 +150,16 @@ export default function Home() {
                   fontSize: 80, fontWeight: 800,
                   color: item.color, opacity: 0.06, lineHeight: 1, pointerEvents: 'none'
                 }}>{item.step}</div>
-                <div style={{ fontSize: 36, marginBottom: 16 }}>{item.icon}</div>
+                <div style={{ marginBottom: 16 }}>
+                  <item.icon size={36} color={item.color} />
+                </div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{item.title}</h3>
                 <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 20 }}>{item.desc}</p>
                 <Link href={item.link} style={{
                   fontSize: 13, fontWeight: 600,
                   color: item.color, display: 'inline-flex', alignItems: 'center', gap: 6
                 }}>
-                  {item.cta} →
+                  {item.cta} <ChevronRight size={14} />
                 </Link>
               </div>
             ))}
@@ -176,19 +169,25 @@ export default function Home() {
 
       <section style={{ padding: '40px 0 80px', overflow: 'hidden' }}>
         <p style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 24 }}>
-          Participating Departments
+          Registered Departments
         </p>
-        <div style={{
-          display: 'flex', gap: 12, width: 'max-content',
-          animation: 'grid-move 0s linear 0s, marquee 20s linear infinite'
-        }}>
-          <style>{`@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
-          {[...DEPARTMENTS, ...DEPARTMENTS].map((dep, i) => (
-            <span key={i} className="badge badge-violet" style={{ fontSize: 12, padding: '6px 16px', whiteSpace: 'nowrap' }}>
-              {dep}
-            </span>
-          ))}
-        </div>
+        {registeredDepts.length > 0 ? (
+          <div style={{
+            display: 'flex', gap: 12, width: 'max-content',
+            animation: 'marquee 20s linear infinite'
+          }}>
+            <style>{`@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
+            {[...registeredDepts, ...registeredDepts].map((dep, i) => (
+              <span key={i} className="badge badge-violet" style={{ fontSize: 12, padding: '6px 16px', whiteSpace: 'nowrap' }}>
+                {dep}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-3)' }}>
+            No departments registered yet. Be the first!
+          </p>
+        )}
       </section>
     </div>
   )

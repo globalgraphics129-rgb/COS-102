@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
 import ThemeToggle from '../../components/ThemeToggle'
+import { GraduationCap, Search, CheckCircle, ArrowLeft, LogOut } from 'lucide-react'
 
 interface SubmissionInfo {
   id: string; group_number: number; project_name: string;
@@ -56,14 +57,14 @@ export default function StudentDashboard() {
       <nav className="nav">
         <div className="nav-inner">
           <Link href="/" className="nav-logo">
-            <div className="nav-logo-icon">{'\uD83C\uDF93'}</div>
+            <div className="nav-logo-icon"><GraduationCap size={20} /></div>
             <span className="nav-logo-text gradient-text">AcademiHub</span>
           </Link>
           <div className="nav-links">
             <ThemeToggle />
             {user && (
-              <button onClick={logout} className="btn btn-secondary" style={{ fontSize: 12, padding: '6px 12px' }}>
-                Sign Out
+              <button onClick={logout} className="btn btn-secondary" style={{ fontSize: 12, padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <LogOut size={14} /> Sign Out
               </button>
             )}
           </div>
@@ -73,7 +74,7 @@ export default function StudentDashboard() {
       <div className="container" style={{ paddingTop: 60, paddingBottom: 60, maxWidth: 640 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, marginBottom: 8 }}>
-            {'\uD83C\uDF93'} Student Dashboard
+            <GraduationCap size={28} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Student Dashboard
           </h1>
           <p style={{ color: 'var(--text-2)', fontSize: 14 }}>
             Enter your matric number to view your submission status
@@ -103,7 +104,7 @@ export default function StudentDashboard() {
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
                   <span className="badge badge-violet">{submission.department}</span>
                   <span className="badge badge-cyan">Group {submission.group_number}</span>
-                  <span className="badge badge-green">{'\u2713'} Submitted</span>
+                  <span className="badge badge-green">Submitted</span>
                 </div>
 
                 <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{submission.project_name}</h2>
@@ -135,7 +136,7 @@ export default function StudentDashboard() {
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-3)' }}>
-                <p style={{ fontSize: 32, marginBottom: 12 }}>{'\uD83D\uDD0D'}</p>
+                <Search size={32} style={{ marginBottom: 12, color: 'var(--text-3)' }} />
                 <p>No submission found for this matric number.</p>
                 <p style={{ fontSize: 12, marginTop: 4 }}>Make sure you enter it exactly as registered by your group leader.</p>
               </div>
@@ -144,7 +145,7 @@ export default function StudentDashboard() {
         )}
 
         <div style={{ textAlign: 'center', marginTop: 24 }}>
-          <Link href="/" className="btn btn-secondary" style={{ fontSize: 13 }}>← Back to Home</Link>
+          <Link href="/" className="btn btn-secondary" style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} /> Back to Home</Link>
         </div>
       </div>
     </div>

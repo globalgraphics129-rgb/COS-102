@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
 import toast from 'react-hot-toast'
+import { GraduationCap, ArrowLeft } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -35,7 +36,7 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: 400, padding: 24 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <Link href="/" className="nav-logo" style={{ justifyContent: 'center', marginBottom: 16 }}>
-            <div className="nav-logo-icon">{'\uD83C\uDF93'}</div>
+            <div className="nav-logo-icon"><GraduationCap size={20} /></div>
             <span className="nav-logo-text gradient-text">AcademiHub</span>
           </Link>
           <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Welcome Back</h1>
@@ -65,7 +66,7 @@ export default function LoginPage() {
           No account? <Link href="/register" style={{ color: 'var(--primary-light)', fontWeight: 600 }}>Create one</Link>
         </p>
         <p style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: 'var(--text-3)' }}>
-          <Link href="/" style={{ color: 'var(--text-3)' }}>← Back to Home</Link>
+          <Link href="/" style={{ color: 'var(--text-3)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} /> Back to Home</Link>
         </p>
       </div>
     </div>

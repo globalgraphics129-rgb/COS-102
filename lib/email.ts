@@ -29,7 +29,7 @@ async function sendEmail(payload: EmailPayload) {
   return res.json()
 }
 
-function baseTemplate(title: string, content: string, emoji: string = '\uD83C\uDF93') {
+function baseTemplate(title: string, content: string) {
   return `
 <!DOCTYPE html>
 <html>
@@ -44,7 +44,6 @@ function baseTemplate(title: string, content: string, emoji: string = '\uD83C\uD
     .wrapper { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
     .card { background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%); border: 1px solid rgba(5,150,105,0.3); border-radius: 16px; overflow: hidden; }
     .header { background: linear-gradient(135deg, #059669 0%, #0d9488 50%, #14b8a6 100%); padding: 40px 32px; text-align: center; }
-    .header-emoji { font-size: 48px; display: block; margin-bottom: 12px; }
     .header h1 { color: #fff; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
     .header p { color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 6px; }
     .body { padding: 32px; }
@@ -71,7 +70,6 @@ function baseTemplate(title: string, content: string, emoji: string = '\uD83C\uD
   <div class="wrapper">
     <div class="card">
       <div class="header">
-        <span class="header-emoji">${emoji}</span>
         <h1>AcademiHub</h1>
         <p>Academic Project Management</p>
       </div>
@@ -79,8 +77,8 @@ function baseTemplate(title: string, content: string, emoji: string = '\uD83C\uD
         ${content}
       </div>
       <div class="footer">
-        <p>Need help? Reply to this email — we\'re here for you.</p>
-        <p style="margin-top:8px">\u00A9 2025 AcademiHub &nbsp;·&nbsp; <span class="badge">Project Submission System</span></p>
+        <p>Need help? Reply to this email — we're here for you.</p>
+        <p style="margin-top:8px">&copy; 2025 AcademiHub &nbsp;·&nbsp; <span class="badge">Project Submission System</span></p>
       </div>
     </div>
   </div>
@@ -94,22 +92,22 @@ export async function sendDepartmentRegistrationEmail({
   repEmail: string; repName: string; department: string; numberOfGroups: number
 }) {
   const content = `
-    <p class="greeting">Hey ${repName}! \uD83D\uDC4B</p>
-    <p class="text">Your department has been successfully registered. You\'re all set — groups in your department can now start submitting their projects.</p>
+    <p class="greeting">Hey ${repName}!</p>
+    <p class="text">Your department has been successfully registered. You're all set — groups in your department can now start submitting their projects.</p>
     <div class="summary-box">
-      <h3>\uD83D\uDCCB Registration Summary</h3>
+      <h3>Registration Summary</h3>
       <div class="summary-row"><span class="summary-label">Department</span><span class="summary-value">${department}</span></div>
       <div class="summary-row"><span class="summary-label">Number of Groups</span><span class="summary-value">${numberOfGroups}</span></div>
       <div class="summary-row"><span class="summary-label">Class Rep</span><span class="summary-value">${repName}</span></div>
-      <div class="summary-row"><span class="summary-label">Status</span><span class="summary-value" style="color:#4ade80">\u2713 Registered</span></div>
+      <div class="summary-row"><span class="summary-label">Status</span><span class="summary-value" style="color:#4ade80">Registered</span></div>
     </div>
     <p class="text">Share the submission link with your group leaders so they can upload their work. The admin will be notified as submissions come in.</p>
     <p class="support-text">Questions? Reply to this email at <a href="mailto:${REPLY_TO}">${REPLY_TO}</a></p>
   `
   return sendEmail({
     to: [{ email: repEmail, name: repName }],
-    subject: `\u2705 ${department} Registered — AcademiHub`,
-    htmlContent: baseTemplate('Department Registered', content, '\uD83C\uDFDB\uFE0F'),
+    subject: `${department} Registered — AcademiHub`,
+    htmlContent: baseTemplate('Department Registered', content),
   })
 }
 
@@ -124,34 +122,34 @@ export async function sendProjectSubmissionEmail({
   const memberRows = members.map(m => `
     <div style="display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid rgba(13,148,136,0.1);font-size:13px;">
       <span style="color:#e2e8f0">${m.name}</span>
-      <span style="color:#2dd4bf;font-family:monospace">${m.matric || '\u2014'}</span>
+      <span style="color:#2dd4bf;font-family:monospace">${m.matric || '—'}</span>
     </div>
   `).join('')
   const content = `
-    <p class="greeting">Submission received, ${leaderName}! \uD83D\uDE80</p>
-    <p class="text">Your group\'s project has been successfully submitted. The lecturer will be able to view all submissions through the admin panel. Here\'s a summary of what was submitted:</p>
+    <p class="greeting">Submission received, ${leaderName}!</p>
+    <p class="text">Your group's project has been successfully submitted. The lecturer will be able to view all submissions through the admin panel. Here's a summary of what was submitted:</p>
     <div class="summary-box">
-      <h3>\uD83D\uDCE6 Submission Details</h3>
+      <h3>Submission Details</h3>
       <div class="summary-row"><span class="summary-label">Project Name</span><span class="summary-value">${projectName}</span></div>
       <div class="summary-row"><span class="summary-label">Department</span><span class="summary-value">${department}</span></div>
       <div class="summary-row"><span class="summary-label">Group Number</span><span class="summary-value">Group ${groupNumber}</span></div>
       <div class="summary-row"><span class="summary-label">GitHub Link</span><span class="summary-value"><a href="${githubLink}" style="color:#2dd4bf">${githubLink}</a></span></div>
       <div class="summary-row"><span class="summary-label">Submitted By</span><span class="summary-value">${leaderName}</span></div>
-      <div class="summary-row"><span class="summary-label">Status</span><span class="summary-value" style="color:#4ade80">\u2713 Submitted</span></div>
+      <div class="summary-row"><span class="summary-label">Status</span><span class="summary-value" style="color:#4ade80">Submitted</span></div>
     </div>
     <div class="members-box">
-      <h3>\uD83D\uDC65 Group Members (${members.length})</h3>
+      <h3>Group Members (${members.length})</h3>
       <div style="background:rgba(13,148,136,0.05);border-radius:8px;overflow:hidden;">
         ${memberRows}
       </div>
     </div>
-    <a href="${githubLink}" class="github-btn">\uD83D\uDD17 View Project on GitHub</a>
+    <a href="${githubLink}" class="github-btn">View Project on GitHub</a>
     <p class="support-text">If you need to make changes or have questions, reply to this email at <a href="mailto:${REPLY_TO}">${REPLY_TO}</a></p>
   `
   return sendEmail({
     to: [{ email: leaderEmail, name: leaderName }],
-    subject: `\uD83C\uDF89 Project Submitted — ${projectName} | Group ${groupNumber}`,
-    htmlContent: baseTemplate('Project Submitted', content, '\uD83D\uDE80'),
+    subject: `Project Submitted — ${projectName} | Group ${groupNumber}`,
+    htmlContent: baseTemplate('Project Submitted', content),
   })
 }
 
@@ -169,17 +167,16 @@ export async function sendCustomAdminEmail({
   return sendEmail({
     to: [{ email: toEmail, name: toName }],
     subject,
-    htmlContent: baseTemplate('Message from Admin', content, '\uD83D\uDCEC'),
+    htmlContent: baseTemplate('Message from Admin', content),
   })
 }
 
 export async function sendBulkNotification({
-  recipients, subject, message, emoji = '\uD83D\uDCE2'
+  recipients, subject, message
 }: {
   recipients: { email: string; name: string }[]
   subject: string
   message: string
-  emoji?: string
 }) {
   if (recipients.length === 0) return
   const content = `
@@ -191,7 +188,7 @@ export async function sendBulkNotification({
     await sendEmail({
       to: batch,
       subject,
-      htmlContent: baseTemplate('AcademiHub Notification', content, emoji),
+      htmlContent: baseTemplate('AcademiHub Notification', content),
     })
   }
 }
@@ -205,15 +202,15 @@ export async function sendPortalClosedReportToAdmin({
     <p class="greeting">Portal Closed — Final Report</p>
     <p class="text">The project submission portal has been closed. All submissions are now final.</p>
     <div class="summary-box">
-      <h3>\uD83D\uDCCA Submission Summary</h3>
+      <h3>Submission Summary</h3>
       <div style="white-space:pre-wrap;font-size:13px;line-height:1.8;color:#e2e8f0;">${summary}</div>
     </div>
     <p class="support-text">You can view the full report in the admin panel at any time.</p>
   `
   return sendEmail({
     to: [{ email: 'globalgraphics129@gmail.com', name: 'Admin' }],
-    subject: '\uD83D\uDCCA AcademiHub Portal Closed — Final Submission Report',
-    htmlContent: baseTemplate('Portal Closed Report', content, '\uD83D\uDCCA'),
+    subject: 'AcademiHub Portal Closed — Final Submission Report',
+    htmlContent: baseTemplate('Portal Closed Report', content),
   })
 }
 
@@ -236,7 +233,7 @@ export async function sendAnnouncementEmail({
     await sendEmail({
       to: batch,
       subject,
-      htmlContent: baseTemplate('AcademiHub Announcement', content, '\uD83D\uDCE2'),
+      htmlContent: baseTemplate('AcademiHub Announcement', content),
     })
   }
 }

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { parseMemberEntry } from '@/lib/matric'
+import { GraduationCap, Users, Rocket, Building2, ArrowLeft, ArrowRight, Lock, Github, FileText, X } from 'lucide-react'
 
 interface Department { id: string; department: string; number_of_groups: number }
 interface Group { id: string; group_number: number; leader_name: string; project_name: string; submitted: boolean }
@@ -141,7 +142,7 @@ export default function SubmitProject() {
       if (!res.ok) throw new Error(data.error || 'Submission failed')
       setSubmittedData(data)
       setDone(true)
-      toast.success('Project submitted! 🎉')
+      toast.success('Project submitted!')
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -155,13 +156,13 @@ export default function SubmitProject() {
         <nav className="nav">
           <div className="nav-inner">
             <Link href="/" className="nav-logo">
-              <div className="nav-logo-icon">🎓</div>
+              <div className="nav-logo-icon"><GraduationCap size={20} /></div>
               <span className="nav-logo-text gradient-text">AcademiHub</span>
             </Link>
           </div>
         </nav>
         <div className="form-container" style={{ textAlign: 'center', paddingTop: 60 }}>
-          <div className="success-icon">🚀</div>
+            <div className="success-icon"><Rocket size={32} /></div>
           <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8, letterSpacing: -1 }}>
             Project Submitted!
           </h2>
@@ -210,21 +211,21 @@ export default function SubmitProject() {
   }
 
   const modes: { id: InputMode; icon: string; label: string }[] = [
-    { id: 'manual', icon: '✏️', label: 'One by one' },
-    { id: 'bulk', icon: '📋', label: 'Paste list' },
-    { id: 'upload', icon: '📄', label: 'Upload file' },
+    { id: 'manual', icon: 'A', label: 'One by one' },
+    { id: 'bulk', icon: 'B', label: 'Paste list' },
+    { id: 'upload', icon: 'F', label: 'Upload file' },
   ]
 
   if (portalClosed) {
     return (
       <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center', maxWidth: 400, padding: 24 }}>
-          <p style={{ fontSize: 48, marginBottom: 16 }}>{'\uD83D\uDD12'}</p>
+          <div style={{ fontSize: 48, marginBottom: 16, display: 'flex', justifyContent: 'center' }}><Lock size={48} /></div>
           <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, marginBottom: 12 }}>Portal Closed</h1>
           <p style={{ color: 'var(--text-2)', fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>
             The submission portal has been closed. Project submissions are no longer available.
           </p>
-          <Link href="/" className="btn btn-secondary" style={{ display: 'inline-block' }}>← Back Home</Link>
+          <Link href="/" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><ArrowLeft size={14} /> Back Home</Link>
         </div>
       </div>
     )
@@ -235,11 +236,11 @@ export default function SubmitProject() {
       <nav className="nav">
         <div className="nav-inner">
           <Link href="/" className="nav-logo">
-            <div className="nav-logo-icon">🎓</div>
+            <div className="nav-logo-icon"><GraduationCap size={20} /></div>
             <span className="nav-logo-text gradient-text">AcademiHub</span>
           </Link>
           <div className="nav-links">
-            <Link href="/" className="nav-link">← Home</Link>
+            <Link href="/" className="nav-link" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} /> Home</Link>
           </div>
         </div>
       </nav>
@@ -296,7 +297,7 @@ export default function SubmitProject() {
                   <label className="label">Your Group *</label>
                   {groups.length === 0 ? (
                     <div style={{ padding: '12px 16px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-3)' }}>
-                      No groups registered yet. <Link href="/register-group" style={{ color: 'var(--violet-light)' }}>Register your group first →</Link>
+                      No groups registered yet. <Link href="/register-group" style={{ color: 'var(--violet-light)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>Register your group first <ArrowRight size={14} /></Link>
                     </div>
                   ) : (
                     <select
@@ -392,7 +393,7 @@ export default function SubmitProject() {
                   onClick={parseBulk}
                   disabled={!bulkText.trim()}
                 >
-                  Add Members →
+                  <><ArrowRight size={14} style={{ marginLeft: 6 }} /> Add Members</>
                 </button>
               </div>
             )}
@@ -424,7 +425,7 @@ export default function SubmitProject() {
                     </div>
                   ) : (
                     <div>
-                      <p style={{ fontSize: 28, marginBottom: 8 }}>📄</p>
+                      <FileText size={28} style={{ marginBottom: 8 }} />
                       <p style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 4 }}>
                         Drop a <strong>.csv</strong> or <strong>.pdf</strong> file here
                       </p>
@@ -453,10 +454,10 @@ export default function SubmitProject() {
                         <span style={{ fontSize: 13, color: 'var(--text)' }}>{m.name}</span>
                         {m.matric && <span className="mono" style={{ marginLeft: 8, fontSize: 11 }}>{m.matric}</span>}
                       </div>
-                      <button type="button" onClick={() => removeMember(m.name)}
-                        style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 14, padding: '0 4px' }}>
-                        ✕
-                      </button>
+                        <button type="button" onClick={() => removeMember(m.name)}
+                          style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 14, padding: '0 4px', display: 'flex', alignItems: 'center' }}>
+                          <X size={14} />
+                        </button>
                     </div>
                   ))}
                 </div>
@@ -512,7 +513,7 @@ export default function SubmitProject() {
             style={{ width: '100%', padding: '16px', fontSize: 15 }}
             disabled={loading}
           >
-            {loading ? <><span className="spinner" /> Submitting...</> : '🚀 Submit Project'}
+            {loading ? <><span className="spinner" /> Submitting...</> : <><Rocket size={18} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Submit Project</>}
           </button>
 
           <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', marginTop: 12 }}>

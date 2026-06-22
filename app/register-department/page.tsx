@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { GraduationCap, Building2, ArrowLeft, ArrowRight, Lock } from 'lucide-react'
 
 export default function RegisterDepartment() {
   const [portalClosed, setPortalClosed] = useState(false)
@@ -30,12 +31,12 @@ export default function RegisterDepartment() {
     return (
       <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center', maxWidth: 400, padding: 24 }}>
-          <p style={{ fontSize: 48, marginBottom: 16 }}>{'\uD83D\uDD12'}</p>
+          <div style={{ fontSize: 48, marginBottom: 16, display: 'flex', justifyContent: 'center' }}><Lock size={48} /></div>
           <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, marginBottom: 12 }}>Portal Closed</h1>
           <p style={{ color: 'var(--text-2)', fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>
             The submission portal has been closed. Department registration is no longer available.
           </p>
-          <Link href="/" className="btn btn-secondary" style={{ display: 'inline-block' }}>← Back Home</Link>
+          <Link href="/" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><ArrowLeft size={14} /> Back Home</Link>
         </div>
       </div>
     )
@@ -75,13 +76,13 @@ export default function RegisterDepartment() {
         <nav className="nav">
           <div className="nav-inner">
             <Link href="/" className="nav-logo">
-              <div className="nav-logo-icon">🎓</div>
+              <div className="nav-logo-icon"><GraduationCap size={20} /></div>
               <span className="nav-logo-text gradient-text">AcademiHub</span>
             </Link>
           </div>
         </nav>
         <div className="form-container" style={{ textAlign: 'center', paddingTop: 80 }}>
-          <div className="success-icon">🏛️</div>
+          <div className="success-icon"><Building2 size={32} /></div>
           <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12, letterSpacing: -1 }}>
             Department Registered!
           </h2>
@@ -91,7 +92,7 @@ export default function RegisterDepartment() {
             Share the submission link with your group leaders.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/register-group" className="btn btn-primary">Next: Register Groups →</Link>
+            <Link href="/register-group" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>Next: Register Groups <ArrowRight size={14} /></Link>
             <Link href="/" className="btn btn-secondary">Back Home</Link>
           </div>
         </div>
@@ -104,11 +105,11 @@ export default function RegisterDepartment() {
       <nav className="nav">
         <div className="nav-inner">
           <Link href="/" className="nav-logo">
-            <div className="nav-logo-icon">🎓</div>
+            <div className="nav-logo-icon"><GraduationCap size={20} /></div>
             <span className="nav-logo-text gradient-text">AcademiHub</span>
           </Link>
           <div className="nav-links">
-            <Link href="/" className="nav-link">← Home</Link>
+            <Link href="/" className="nav-link" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} /> Home</Link>
           </div>
         </div>
       </nav>
@@ -228,7 +229,7 @@ export default function RegisterDepartment() {
             style={{ width: '100%', padding: '16px', fontSize: 15 }}
             disabled={loading}
           >
-            {loading ? <><span className="spinner" /> Registering...</> : '🏛️ Register Department'}
+            {loading ? <><span className="spinner" /> Registering...</> : <><Building2 size={18} style={{ marginRight: 8, verticalAlign: 'middle' }} /> Register Department</>}
           </button>
         </form>
       </div>

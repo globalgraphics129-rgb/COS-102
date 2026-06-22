@@ -79,9 +79,8 @@ export async function POST(req: NextRequest) {
 
       await sendBulkNotification({
         recipients,
-        subject: `⏰ Portal Closes ${formattedDate} — AcademiHub`,
+        subject: `Portal Closes ${formattedDate} — AcademiHub`,
         message: `The project submission portal will close on ${formattedDate}.\n\nPlease ensure all your group's projects are submitted before this deadline. After the portal closes, no further submissions will be accepted.\n\nIf you have any issues, contact the admin.`,
-        emoji: '⏰',
       })
 
       // Mark closing soon as notified

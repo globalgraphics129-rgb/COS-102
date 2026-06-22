@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
 import ThemeToggle from '../components/ThemeToggle'
+import { GraduationCap, Building2, ClipboardList } from 'lucide-react'
 
 interface GroupInfo {
   id: string; group_number: number; leader_name: string; leader_email: string;
@@ -79,7 +80,7 @@ export default function DashboardPage() {
       <nav className="nav">
         <div className="nav-inner">
           <Link href="/" className="nav-logo">
-            <div className="nav-logo-icon">{'\uD83C\uDF93'}</div>
+            <div className="nav-logo-icon"><GraduationCap size={20} /></div>
             <span className="nav-logo-text gradient-text">AcademiHub</span>
           </Link>
           <div className="nav-links">
@@ -107,7 +108,7 @@ export default function DashboardPage() {
           </div>
           {!user?.department_id && (
             <Link href="/register-department" className="btn btn-primary" style={{ fontSize: 13 }}>
-              {'\uD83C\uDFDB\uFE0F'} Register Department
+              Register Department
             </Link>
           )}
         </div>
@@ -116,10 +117,10 @@ export default function DashboardPage() {
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
               {[
-                { label: 'Total Groups', value: department.number_of_groups, icon: '\uD83D\uDC65', color: 'var(--primary)' },
-                { label: 'Submitted', value: submittedCount, icon: '\u2713', color: '#10b981' },
+                { label: 'Total Groups', value: department.number_of_groups, icon: 'GP', color: 'var(--primary)' },
+                { label: 'Submitted', value: submittedCount, icon: 'SB', color: '#10b981' },
                 { label: 'Pending', value: department.number_of_groups - submittedCount, icon: '\u23F3', color: '#f59e0b' },
-                { label: 'Completion', value: `${department.number_of_groups > 0 ? Math.round(submittedCount / department.number_of_groups * 100) : 0}%`, icon: '\uD83D\uDCCA', color: 'var(--secondary)' },
+                { label: 'Completion', value: `${department.number_of_groups > 0 ? Math.round(submittedCount / department.number_of_groups * 100) : 0}%`, icon: 'PR', color: 'var(--secondary)' },
               ].map(s => (
                 <div key={s.label} className="stat-card">
                   <div style={{ fontSize: 24, marginBottom: 4 }}>{s.icon}</div>
@@ -137,7 +138,7 @@ export default function DashboardPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontWeight: 700 }}>Group {g.group_number}</span>
                       <span className={`badge ${g.submitted ? 'badge-green' : 'badge-violet'}`}>
-                        {g.submitted ? '\u2713 Submitted' : 'Pending'}
+                        {g.submitted ? 'Submitted' : 'Pending'}
                       </span>
                     </div>
                     <p style={{ fontSize: 13, color: 'var(--text-2)' }}>
@@ -151,7 +152,7 @@ export default function DashboardPage() {
               ))}
               {groups.length === 0 && (
                 <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-3)' }}>
-                  <p style={{ fontSize: 28, marginBottom: 8 }}>{'\uD83D\uDCCB'}</p>
+                  <p style={{ fontSize: 28, marginBottom: 8 }}><ClipboardList size={28} /></p>
                   <p>No groups registered yet.</p>
                 </div>
               )}
@@ -161,7 +162,7 @@ export default function DashboardPage() {
 
         {!department && (
           <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-3)' }}>
-            <p style={{ fontSize: 32, marginBottom: 12 }}>{'\uD83C\uDFDB\uFE0F'}</p>
+            <p style={{ fontSize: 32, marginBottom: 12 }}><Building2 size={32} /></p>
             <p style={{ fontSize: 16, marginBottom: 8 }}>No department linked to your account yet.</p>
             <p style={{ fontSize: 13, marginBottom: 20 }}>Register a department or ask an admin to link your account.</p>
             <Link href="/register-department" className="btn btn-primary">Register Department</Link>
@@ -180,7 +181,7 @@ export default function DashboardPage() {
                 padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
                 <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>
-                  {'\uD83E\uDD16'} AcademiBot
+                  AI AcademiBot
                 </span>
                 <button onClick={() => setAiOpen(false)}
                   style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 18, padding: 0 }}>
@@ -225,7 +226,7 @@ export default function DashboardPage() {
               boxShadow: '0 4px 20px rgba(5,150,105,0.4)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-            {'\uD83E\uDD16'}
+            AI
           </button>
         </div>
       </div>

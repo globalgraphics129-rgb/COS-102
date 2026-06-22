@@ -5,6 +5,23 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ====================================================================
+-- PROJECTS (multi-course support)
+-- ====================================================================
+
+CREATE TABLE projects (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  description TEXT,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Insert a default project (for existing data migration)
+INSERT INTO projects (name, description, active)
+VALUES ('Default Project', 'First project / course', TRUE)
+ON CONFLICT DO NOTHING;
+
+-- ====================================================================
 -- USERS & AUTH
 -- ====================================================================
 
@@ -31,18 +48,20 @@ CREATE INDEX idx_sessions_user ON sessions(user_id);
 CREATE INDEX idx_users_email ON users(email);
 
 -- ====================================================================
--- DEPARTMENTS
+-- DEPARTMENTS (now scoped to a project)
 -- ====================================================================
 
 CREATE TABLE departments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  department TEXT NOT NULL UNIQUE,
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  department TEXT NOT NULL,
   rep_name TEXT NOT NULL,
   rep_email TEXT NOT NULL,
   rep_phone TEXT,
   number_of_groups INTEGER NOT NULL DEFAULT 1,
   active BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(project_id, department)
 );
 
 -- ====================================================================
@@ -51,6 +70,7 @@ CREATE TABLE departments (
 
 CREATE TABLE groups (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
   department_id UUID NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
   group_number INTEGER NOT NULL,
   leader_name TEXT NOT NULL,
@@ -68,6 +88,7 @@ CREATE TABLE groups (
 
 CREATE TABLE submissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
   group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
   department TEXT NOT NULL,
   group_number INTEGER NOT NULL,
@@ -119,3 +140,21 @@ CREATE POLICY "Public read submissions" ON submissions FOR SELECT USING (true);
 CREATE INDEX idx_groups_dept ON groups(department_id);
 CREATE INDEX idx_submissions_dept ON submissions(department);
 CREATE INDEX idx_submissions_submitted_at ON submissions(submitted_at DESC);
+CREATE INDEX idx_departments_project ON departments(project_id);
+CREATE INDEX idx_groups_project ON groups(project_id);
+CREATE INDEX idx_submissions_project ON submissions(project_id);
+
+-- ====================================================================
+-- MIGRATE EXISTING DATA TO DEFAULT PROJECT
+-- ====================================================================
+
+DO $$
+DECLARE
+  default_project_id UUID;
+BEGIN
+  SELECT id INTO default_project_id FROM projects WHERE name = 'Default Project' LIMIT 1;
+
+  UPDATE departments SET project_id = default_project_id WHERE project_id IS NULL;
+  UPDATE groups SET project_id = default_project_id WHERE project_id IS NULL;
+  UPDATE submissions SET project_id = default_project_id WHERE project_id IS NULL;
+END $$;

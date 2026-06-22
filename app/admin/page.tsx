@@ -6,6 +6,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { parseMatric, parseMemberEntry, fmtMembers } from '@/lib/matric'
 import ThemeToggle from '../components/ThemeToggle'
+import { GraduationCap, Building2, Users, Package, Send, Timer, LayoutDashboard, BarChart3, Lock, ArrowLeft, ArrowRight, Download, RefreshCw, ExternalLink, Plus, ChevronDown, ChevronRight, Mail, Edit, Trash2, X, Check, User, Search, Globe, FileText, Rocket, BookOpen, List, Grid3X3, Settings, Bell, ClipboardList, UserPlus, TriangleAlert } from 'lucide-react'
 
 interface Member {
   name: string; matric: string;
@@ -36,7 +37,7 @@ interface StudentEntry {
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'cos102admin'
 
-type Tab = 'overview' | 'departments' | 'submissions' | 'students' | 'announcements' | 'settings'
+type Tab = 'overview' | 'departments' | 'submissions' | 'students' | 'announcements' | 'projects' | 'settings'
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
@@ -825,7 +826,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
       <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ width: '100%', maxWidth: 400, padding: 24 }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div className="emoji-lg">{'\uD83D\uDD10'}</div>
+            <Lock size={48} style={{ color: 'var(--violet-light)', marginBottom: 12 }} />
             <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, marginBottom: 8 }}>Admin Access</h1>
             <p style={{ color: 'var(--text-2)', fontSize: 14 }}>AcademiHub — Lecturer/Admin Only</p>
           </div>
@@ -840,12 +841,12 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
               placeholder="Enter admin password..."
               style={{ marginBottom: 16 }}
             />
-            <button onClick={login} className="btn btn-primary" style={{ width: '100%' }}>
-              Enter Admin Panel →
+            <button onClick={login} className="btn btn-primary" style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              Enter Admin Panel <ArrowRight size={16} />
             </button>
           </div>
           <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: 'var(--text-3)' }}>
-            <Link href="/" style={{ color: 'var(--violet-light)' }}>← Back to Home</Link>
+            <Link href="/" style={{ color: 'var(--violet-light)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} /> Back to Home</Link>
           </p>
         </div>
       </div>
@@ -853,12 +854,13 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
   }
 
   const tabs: { id: Tab; icon: string; label: string }[] = [
-    { id: 'overview', icon: '\uD83D\uDCCA', label: 'Overview' },
-    { id: 'students', icon: '\uD83C\uDF93', label: 'Students' },
-    { id: 'departments', icon: '\uD83C\uDFDB\uFE0F', label: 'Departments' },
-    { id: 'submissions', icon: '\uD83D\uDCE6', label: 'Submissions' },
-    { id: 'announcements', icon: '\uD83D\uDCE2', label: 'Announce' },
-    { id: 'settings', icon: '\u2699\uFE0F', label: 'Timer' },
+    { id: 'overview', icon: 'OV', label: 'Overview' },
+    { id: 'students', icon: 'ST', label: 'Students' },
+    { id: 'departments', icon: 'DP', label: 'Departments' },
+    { id: 'submissions', icon: 'SB', label: 'Submissions' },
+    { id: 'announcements', icon: 'AN', label: 'Announce' },
+    { id: 'projects', icon: 'PJ', label: 'Projects' },
+    { id: 'settings', icon: 'TM', label: 'Timer' },
   ]
 
   return (
@@ -866,16 +868,16 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
       <nav className="nav">
         <div className="nav-inner">
           <Link href="/" className="nav-logo">
-            <div className="nav-logo-icon">{'\uD83C\uDF93'}</div>
+            <div className="nav-logo-icon"><GraduationCap size={20} /></div>
             <span className="nav-logo-text gradient-text">AcademiHub</span>
           </Link>
           <div className="nav-links">
             <span className="badge badge-violet">Admin Panel</span>
-            <button onClick={loadData} className="btn btn-secondary" style={{ fontSize: 12, padding: '6px 12px' }}>
-              {loading ? <span className="spinner" /> : '\u21BB'} Refresh
+            <button onClick={loadData} className="btn btn-secondary" style={{ fontSize: 12, padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              {loading ? <span className="spinner" /> : <RefreshCw size={14} />} Refresh
             </button>
-            <button onClick={exportPDF} className="btn btn-cyan" style={{ fontSize: 12, padding: '6px 12px' }}>
-              {'\u2B07'} Export PDF Report
+            <button onClick={exportPDF} className="btn btn-cyan" style={{ fontSize: 12, padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <Download size={14} /> Export PDF Report
             </button>
             <ThemeToggle />
           </div>
@@ -936,10 +938,10 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
               <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.5, marginBottom: 24 }}>Overview</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
                 {[
-                  { label: 'Registered Depts', value: departments.length, icon: '\uD83C\uDFDB\uFE0F', color: 'var(--violet)' },
-                  { label: 'Project Submissions', value: submissions.length, icon: '\uD83D\uDCE6', color: 'var(--cyan)' },
-                  { label: 'Total Students', value: submissions.reduce((a, s) => a + s.members.length, 0), icon: '\uD83D\uDC65', color: '#10b981' },
-                  { label: 'Unique Projects', value: new Set(submissions.map(s => s.project_name)).size, icon: '\uD83D\uDCA1', color: '#f59e0b' },
+                  { label: 'Registered Depts', value: departments.length, icon: 'DP', color: 'var(--violet)' },
+                  { label: 'Project Submissions', value: submissions.length, icon: 'SB', color: 'var(--cyan)' },
+                  { label: 'Total Students', value: submissions.reduce((a, s) => a + s.members.length, 0), icon: 'ST', color: '#10b981' },
+                  { label: 'Unique Projects', value: new Set(submissions.map(s => s.project_name)).size, icon: 'PR', color: '#f59e0b' },
                 ].map(s => (
                   <div key={s.label} className="stat-card">
                     <div style={{ fontSize: 28, marginBottom: 4 }}>{s.icon}</div>
@@ -1160,7 +1162,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                           )}
                           {!loadingGroups && (!deptGroups[d.id] || deptGroups[d.id]!.length === 0) && (
                             <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-3)' }}>
-                              <p style={{ fontSize: 28, marginBottom: 8 }}>{'\uD83D\uDCCB'}</p>
+                              <ClipboardList size={28} style={{ marginBottom: 8 }} />
                               <p>No groups registered yet for this department.</p>
                             </div>
                           )}
@@ -1186,7 +1188,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                                   </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <span className={`badge ${g.submitted ? 'badge-green' : 'badge-violet'}`}>
-                                      {g.submitted ? '\u2713 Submitted' : 'Pending'}
+                                      {g.submitted ? 'Submitted' : 'Pending'}
                                     </span>
                                     <button onClick={(e) => { e.stopPropagation(); openEditGroupModal(g) }}
                                       className="btn btn-secondary" style={{ fontSize: 10, padding: '2px 7px' }}>Edit</button>
@@ -1293,7 +1295,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                 })}
                 {departments.length === 0 && (
                   <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-3)' }}>
-                    <p style={{ fontSize: 32, marginBottom: 12 }}>{'\uD83C\uDFDB\uFE0F'}</p>
+                    <p style={{ fontSize: 32, marginBottom: 12 }}><Building2 size={32} /></p>
                     <p>No departments registered yet.</p>
                     <Link href="/register-department" className="btn btn-primary" style={{ marginTop: 16, display: 'inline-block' }}>Add Department</Link>
                   </div>
@@ -1314,17 +1316,17 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                     className={`btn ${viewMode === 'table' ? 'btn-primary' : 'btn-secondary'}`}
                     style={{ fontSize: 11, padding: '6px 12px' }}
                   >
-                    {'\uD83D\uDCCB'} Table
+                    List Table
                   </button>
                   <button
                     onClick={() => setViewMode('cards')}
                     className={`btn ${viewMode === 'cards' ? 'btn-primary' : 'btn-secondary'}`}
                     style={{ fontSize: 11, padding: '6px 12px' }}
                   >
-                    {'\uD83D\uDCC3'} Cards
+                    Grid Cards
                   </button>
                   <button onClick={exportPDF} className="btn btn-cyan" style={{ fontSize: 12 }}>
-                    {'\u2B07'} Export PDF
+                    <Download size={14} /> Export PDF
                   </button>
                 </div>
               </div>
@@ -1434,7 +1436,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                           <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
                             <span className="badge badge-violet">{s.department}</span>
                             <span className="badge badge-cyan">Group {s.group_number}</span>
-                            <span className="badge badge-green">{'\u2713'} Submitted</span>
+                            <span className="badge badge-green">Submitted</span>
                           </div>
                           <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{s.project_name}</h3>
                           <p style={{ fontSize: 13, color: 'var(--text-3)' }}>
@@ -1513,7 +1515,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                           className="btn btn-secondary"
                           style={{ fontSize: 12, padding: '6px 14px' }}
                         >
-                          {'\uD83D\uDD17'} GitHub →
+                          <><ExternalLink size={14} style={{ marginRight: 6 }} /> GitHub <ArrowRight size={14} style={{ marginLeft: 4 }} /></>
                         </a>
                         {s.notes && (
                           <p style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic' }}>
@@ -1528,7 +1530,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                   ))}
                   {filteredSubmissions.length === 0 && (
                     <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-3)' }}>
-                      <p style={{ fontSize: 32, marginBottom: 12 }}>{'\uD83D\uDCED'}</p>
+                      <p style={{ fontSize: 32, marginBottom: 12 }}><Mail size={32} /></p>
                       <p>No submissions match your search.</p>
                     </div>
                   )}
@@ -1605,7 +1607,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                     className="btn btn-primary"
                     disabled={sendingAnnounce}
                   >
-                    {sendingAnnounce ? <><span className="spinner" /> Sending...</> : '\uD83D\uDCE2 Send Announcement to All'}
+                    {sendingAnnounce ? <><span className="spinner" /> Sending...</> : 'Send Announcement to All'}
                   </button>
                 </div>
               </div>
@@ -1897,7 +1899,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
             style={{ width: '100%', maxWidth: 400, margin: 24, textAlign: 'center' }}
             onClick={e => e.stopPropagation()}
           >
-            <p style={{ fontSize: 40, marginBottom: 12 }}>{'\u26A0\uFE0F'}</p>
+            <p style={{ fontSize: 40, marginBottom: 12 }}><TriangleAlert size={40} /></p>
             <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>Delete Group?</h3>
             <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 20 }}>
               This will permanently delete Group {deleteGroupTarget.group_number}

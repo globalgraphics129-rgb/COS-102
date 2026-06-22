@@ -41,9 +41,8 @@ export async function POST() {
     // Email all users
     await sendBulkNotification({
       recipients,
-      subject: `🔒 Portal Closed — AcademiHub`,
+      subject: `Portal Closed — AcademiHub`,
       message: `The project submission portal is now closed.\n\nAll submissions have been finalized. Thank you to everyone who participated.\n\nIf you have any questions, please contact the admin.`,
-      emoji: '🔒',
     })
 
     // Build summary for admin

@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { Sun, Moon } from 'lucide-react'
 
 export default function ThemeToggle() {
   const [dark, setDark] = useState(true)
@@ -32,9 +33,11 @@ export default function ThemeToggle() {
         lineHeight: 1,
         color: 'var(--text-2)',
         transition: 'all 0.2s',
+        display: 'inline-flex',
+        alignItems: 'center',
       }}
     >
-      {dark ? '\u2600\uFE0F' : '\uD83C\uDF19'}
+      {dark ? <Sun size={16} /> : <Moon size={16} />}
     </button>
   )
 }
