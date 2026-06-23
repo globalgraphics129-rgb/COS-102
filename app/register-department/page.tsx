@@ -3,7 +3,7 @@ import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { GraduationCap, Building2, ArrowLeft, ArrowRight, Lock, BookOpen } from 'lucide-react'
+import { GraduationCap, Building2, ArrowLeft, ArrowRight, Lock, BookOpen, Menu, X, Users, Rocket } from 'lucide-react'
 
 interface Project { id: string; name: string; description: string | null }
 
@@ -24,6 +24,7 @@ function RegisterDepartmentInner() {
   })
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     fetch('/api/portal-settings')
@@ -134,9 +135,40 @@ function RegisterDepartmentInner() {
           </Link>
           <div className="nav-links">
             <Link href="/" className="btn btn-secondary" style={{ fontSize: 12, padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} /> Home</Link>
+            <button onClick={() => setMenuOpen(true)} className="mobile-menu-btn" aria-label="Open menu">
+              <Menu size={20} />
+            </button>
           </div>
         </div>
       </nav>
+
+      {menuOpen && (
+        <div className="mobile-overlay">
+          <div className="mobile-overlay-header">
+            <Link href="/" className="nav-logo" onClick={() => setMenuOpen(false)}>
+              <div className="nav-logo-icon"><GraduationCap size={20} /></div>
+              <span className="nav-logo-text gradient-text">AcademiHub</span>
+            </Link>
+            <button onClick={() => setMenuOpen(false)} className="mobile-menu-btn">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="mobile-overlay-body">
+            <Link href="/register-department" className="mobile-overlay-link" onClick={() => setMenuOpen(false)}>
+              <Building2 size={18} /> Class Reps
+            </Link>
+            <Link href="/register-group" className="mobile-overlay-link" onClick={() => setMenuOpen(false)}>
+              <Users size={18} /> Groups
+            </Link>
+            <Link href="/submit" className="mobile-overlay-link" onClick={() => setMenuOpen(false)}>
+              <Rocket size={18} /> Submit
+            </Link>
+          </div>
+          <div className="mobile-overlay-footer">
+            AcademiHub &middot; Step 1 of 3
+          </div>
+        </div>
+      )}
 
       <div className="form-container">
         <div style={{ marginBottom: 36, animation: 'fade-up 0.5s ease both' }}>

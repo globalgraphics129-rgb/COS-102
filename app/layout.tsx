@@ -5,7 +5,7 @@ import PortalTimer from './components/PortalTimer'
 import ThemeToggle from './components/ThemeToggle'
 
 export const metadata: Metadata = {
-  title: 'AcademiHub — Academic Project Management',
+  title: 'AcademiHub - Academic Project Management',
   description: 'Streamline project submissions, manage departments, and track academic projects in one place.',
   icons: {
     icon: '/favicon.svg',

@@ -464,7 +464,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
       const res = await fetch('/api/admin/portal-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ closes_at: now }),
+        body: JSON.stringify({ closes_at: now, skipNotify: true }),
       })
       if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed'); return }
       setExistingTimer(now)

@@ -130,7 +130,6 @@ export default function Home() {
             <span className="nav-logo-text gradient-text">AcademiHub</span>
           </div>
           <div className="nav-links">
-            <Link href="/register-student" className="nav-link">Students</Link>
             <Link href="/register-department" className="nav-link">Class Reps</Link>
             <Link href="/register-group" className="nav-link">Groups</Link>
             <Link href="/submit" className="nav-link">Submit</Link>
@@ -285,11 +284,7 @@ export default function Home() {
           display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap',
           animation: mounted ? 'fade-up 0.6s 0.3s ease both' : 'none', opacity: 0
         }}>
-          <Link href="/register-student" className="btn btn-primary" style={{ fontSize: 15, padding: '14px 28px' }}>
-            <GraduationCap size={18} style={{ marginRight: 8, verticalAlign: 'middle' }} />
-            Students
-          </Link>
-          <Link href="/register-department" className="btn btn-secondary" style={{ fontSize: 15, padding: '14px 28px' }}>
+          <Link href="/register-department" className="btn btn-primary" style={{ fontSize: 15, padding: '14px 28px' }}>
             <Building2 size={18} style={{ marginRight: 8, verticalAlign: 'middle' }} />
             Class Reps
           </Link>
@@ -303,42 +298,6 @@ export default function Home() {
           </Link>
         </div>
       </section>
-
-      {portalOpen && projects.length > 0 && (
-        <section style={{ padding: '0 24px 60px' }}>
-          <p className="section-eyebrow" style={{ textAlign: 'center' }}>Pick a course</p>
-          <h2 style={{ textAlign: 'center', fontSize: 28, fontWeight: 800, marginBottom: 32, letterSpacing: -1 }}>
-            Active Projects
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, maxWidth: 1000, margin: '0 auto' }}>
-            {projects.map(p => (
-              <div key={p.id} className="card" style={{ padding: 24, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <BookOpen size={24} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                  <div>
-                    <h3 style={{ fontSize: 17, fontWeight: 700 }}>{p.name}</h3>
-                    {p.description && <p style={{ fontSize: 12, color: 'var(--text-3)' }}>{p.description}</p>}
-                  </div>
-                </div>
-                <div style={{ marginTop: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Link href={`/register-department?projectId=${p.id}`} className="btn btn-primary" style={{ fontSize: 12, padding: '8px 14px', flex: 1, textAlign: 'center' }}>
-                    <Building2 size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                    Class Rep
-                  </Link>
-                  <Link href={`/register-group?projectId=${p.id}`} className="btn btn-secondary" style={{ fontSize: 12, padding: '8px 14px', flex: 1, textAlign: 'center' }}>
-                    <Users size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                    Group
-                  </Link>
-                  <Link href={`/submit?projectId=${p.id}`} className="btn btn-cyan" style={{ fontSize: 12, padding: '8px 14px', flex: 1, textAlign: 'center' }}>
-                    <Rocket size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                    Submit
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       <section style={{ padding: '40px 24px 60px' }}>
         <div className="container">
@@ -362,11 +321,6 @@ export default function Home() {
                 step: '03', icon: Rocket, title: 'Submit Project',
                 desc: 'Leaders submit the project name, GitHub repo link, and final details. Everyone gets a confirmation.',
                 color: '#10b981', link: '/submit', cta: 'Submit Now'
-              },
-              {
-                step: '04', icon: GraduationCap, title: 'Students Verify',
-                desc: 'Students register with their email and matric number, verify with a confirmation code, and track their submission.',
-                color: '#8b5cf6', link: '/register-student', cta: 'Register as Student'
               },
             ].map((item, i) => (
               <div key={i} className="card" style={{ position: 'relative', overflow: 'hidden' }}>

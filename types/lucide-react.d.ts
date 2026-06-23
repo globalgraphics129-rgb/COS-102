@@ -67,6 +67,7 @@ declare module 'lucide-react' {
   export const Grid3X3: Icon
   export const Star: Icon
   export const Package: Icon
+  export const Rocket: Icon
   export const ChevronDown: Icon
   export const TriangleAlert: Icon
   export const Flag: Icon
