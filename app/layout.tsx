@@ -1,8 +1,25 @@
 import type { Metadata } from 'next'
+import { Poppins, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import PortalTimer from './components/PortalTimer'
 import ThemeToggle from './components/ThemeToggle'
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-sans',
+  display: 'swap',
+  preload: true,
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-code',
+  display: 'swap',
+  preload: false,
+})
 
 export const metadata: Metadata = {
   title: 'AcademiHub - Academic Project Management',
@@ -14,7 +31,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${poppins.variable} ${jetbrainsMono.variable}`}>
       <body>
         <div className="grid-bg" />
         <div className="orb orb-1" />
@@ -39,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               background: 'var(--surface)',
               color: 'var(--text)',
               border: '1px solid var(--border)',
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: "var(--font-sans, 'Poppins'), sans-serif",
               fontSize: '13px',
             },
             success: {

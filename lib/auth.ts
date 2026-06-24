@@ -47,7 +47,7 @@ export async function verifyAdmin(token: string): Promise<boolean> {
   if (!token) return false
 
   // 1. Check if it matches the admin password environment variable
-  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'academihubadmin2025'
+  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'academihubadmin'
   if (token === adminPassword) {
     return true
   }

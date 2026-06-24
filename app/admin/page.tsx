@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
+// jsPDF is dynamically imported inside exportPDF() to avoid loading ~1.2MB on initial page load
 import { parseMatric, parseMemberEntry, fmtMembers } from '@/lib/matric'
 import Navbar from '../components/Navbar'
 import { GraduationCap, Building2, Users, Package, Send, Timer, LayoutDashboard, BarChart3, Lock, ArrowLeft, ArrowRight, Download, RefreshCw, ExternalLink, Plus, ChevronDown, ChevronRight, Mail, Edit, Trash2, X, Check, User, Search, Globe, FileText, Rocket, BookOpen, List, Grid3X3, Settings, Bell, ClipboardList, UserPlus, TriangleAlert } from 'lucide-react'
@@ -158,6 +157,15 @@ export default function AdminPage() {
         adminFetch(deptUrl),
         adminFetch(subUrl),
       ])
+      // 401 means stored token doesn't match server — clear and force re-login
+      if (dRes.status === 401 || sRes.status === 401) {
+        localStorage.removeItem('ah-token')
+        localStorage.removeItem('token')
+        setAuthed(false)
+        toast.error('Session expired — please log in again')
+        setLoading(false)
+        return
+      }
       const dData = await dRes.json()
       const sData = await sRes.json()
       setDepartments(dData.departments || [])
@@ -174,6 +182,12 @@ export default function AdminPage() {
   const loadProjects = async () => {
     try {
       const res = await adminFetch('/api/admin/projects')
+      if (res.status === 401) {
+        localStorage.removeItem('ah-token')
+        localStorage.removeItem('token')
+        setAuthed(false)
+        return
+      }
       const data = await res.json()
       setProjects(data.projects || [])
     } catch {}
@@ -672,7 +686,10 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
   const uniqueStudentDepts = Array.from(new Set(allStudents.map(st => st.department))).sort()
   const uniqueStudentGroups = Array.from(new Set(allStudents.map(st => st.groupNumber))).sort((a, b) => a - b)
 
-  const exportPDF = (fromSubmissions?: Submission[], fromDepartments?: Department[]) => {
+  const exportPDF = async (fromSubmissions?: Submission[], fromDepartments?: Department[]) => {
+    // Dynamic import keeps jsPDF (~1.2MB) out of the initial JS bundle
+    const { default: jsPDF } = await import('jspdf')
+    const { default: autoTable } = await import('jspdf-autotable')
     const subs = fromSubmissions || submissions
     const depts = fromDepartments || departments
     if (subs.length === 0) {
@@ -989,7 +1006,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
   const handlePdfExport = async () => {
     const selected = pdfSelectedProjects
     if (selected.length === 0 || selected.length === projects.length) {
-      exportPDF()
+      await exportPDF()
       return
     }
     setExportPdfLoading(true)
@@ -1007,7 +1024,7 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
       const mergedSubs = results.flatMap(r => r.subs)
       const mergedDepts = results.flatMap(r => r.depts)
       setShowPdfOptions(false)
-      exportPDF(mergedSubs, mergedDepts)
+      await exportPDF(mergedSubs, mergedDepts)
     } catch {
       toast.error('Failed to load data for PDF')
     } finally {
@@ -1075,8 +1092,27 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
     { id: 'settings', icon: 'TM', label: 'Timer' },
   ]
 
+  // Icons for the mobile bottom nav bar (lucide-react icons already imported above)
+  const tabIcons: Record<Tab, React.ReactNode> = {
+    overview: <LayoutDashboard size={20} />,
+    students: <Users size={20} />,
+    departments: <Building2 size={20} />,
+    submissions: <Package size={20} />,
+    announcements: <Bell size={20} />,
+    projects: <BookOpen size={20} />,
+    settings: <Timer size={20} />,
+  }
+
   return (
     <div className="page">
+      {/* ARIA Live Region — screen readers announce dynamic status changes */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        id="admin-status-message"
+        style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}
+      />
       <Navbar
         isAdmin={true}
         adminControls={
@@ -2418,6 +2454,25 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
           </div>
         </div>
       )}
+      {/* ── Mobile Admin Bottom Navigation ──
+          Visible only on screens ≤768px. Replaces the
+          horizontal tab overflow bar. All items are ≥52px
+          tall, meeting the 44px touch target minimum.     */}
+      <nav className="admin-bottom-nav" role="tablist" aria-label="Admin panel navigation">
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            aria-label={t.label}
+            className={`admin-bottom-nav-item${tab === t.id ? ' active' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            {tabIcons[t.id]}
+            <span className="admin-bottom-nav-label">{t.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }

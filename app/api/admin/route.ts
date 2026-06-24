@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     if (projectId) query = query.eq('project_id', projectId)
     const { data, error } = await query.order('created_at', { ascending: false })
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ departments: data })
+    return NextResponse.json({ departments: data }, { headers: { 'Cache-Control': 'no-store' } })
   }
 
   if (type === 'submissions') {
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     }
     const { data, error } = await query.order('submitted_at', { ascending: false })
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ submissions: data })
+    return NextResponse.json({ submissions: data }, { headers: { 'Cache-Control': 'no-store' } })
   }
 
   return NextResponse.json({ error: 'Unknown type' }, { status: 400 })
