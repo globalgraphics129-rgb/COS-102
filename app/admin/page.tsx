@@ -1024,30 +1024,33 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
 
   if (!authed) {
     return (
-      <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <div style={{ width: '100%', maxWidth: 400, padding: 24 }}>
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <Lock size={48} style={{ color: 'var(--violet-light)', marginBottom: 12 }} />
-            <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, marginBottom: 8 }}>Admin Access</h1>
-            <p style={{ color: 'var(--text-2)', fontSize: 14 }}>AcademiHub — Lecturer/Admin Only</p>
+      <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', position: 'relative' }}>
+        <div className="spotlight" style={{ top: '20%', left: '30%' }} />
+        <div style={{ width: '100%', maxWidth: 420, padding: 24, position: 'relative', zIndex: 1 }}>
+          <div style={{ textAlign: 'center', marginBottom: 36 }}>
+            <div style={{ display: 'inline-flex', padding: 14, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', marginBottom: 16 }}>
+              <Lock size={32} style={{ color: 'var(--primary-light)' }} />
+            </div>
+            <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: -1, marginBottom: 8 }}>Admin Access</h1>
+            <p style={{ color: 'var(--text-2)', fontSize: 14 }}>AcademiHub — Lecturer & Admin Gateway</p>
           </div>
-          <div className="card">
-            <label className="label">Admin Password</label>
+          <div className="glow-card" style={{ padding: 32 }}>
+            <label className="label" style={{ fontSize: 11, letterSpacing: '1px' }}>System Password</label>
             <input
               className="input"
               type="password"
               value={pw}
               onChange={e => setPw(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && login()}
-              placeholder="Enter admin password..."
-              style={{ marginBottom: 16 }}
+              placeholder="Enter system access code..."
+              style={{ marginBottom: 20, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(16,185,129,0.2)' }}
             />
-            <button onClick={login} className="btn btn-primary" style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              Enter Admin Panel <ArrowRight size={16} />
+            <button onClick={login} className="btn btn-primary" style={{ width: '100%', height: 46 }}>
+              Enter Console <ArrowRight size={16} />
             </button>
           </div>
-          <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: 'var(--text-3)' }}>
-            <Link href="/" style={{ color: 'var(--violet-light)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><ArrowLeft size={14} /> Back to Home</Link>
+          <p style={{ textAlign: 'center', marginTop: 24, fontSize: 13 }}>
+            <Link href="/" style={{ color: 'var(--primary-light)', display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 500 }}><ArrowLeft size={14} /> Return to Main Terminal</Link>
           </p>
         </div>
       </div>
@@ -1149,17 +1152,20 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
           {tab === 'overview' && (
             <div>
               <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.5, marginBottom: 24 }}>Overview</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 36 }}>
                 {[
-                  { label: 'Registered Depts', value: departments.length, icon: 'DP', color: 'var(--violet)' },
-                  { label: 'Project Submissions', value: submissions.length, icon: 'SB', color: 'var(--cyan)' },
-                  { label: 'Total Students', value: submissions.reduce((a, s) => a + s.members.length, 0), icon: 'ST', color: '#10b981' },
-                  { label: 'Unique Projects', value: new Set(submissions.map(s => s.project_name)).size, icon: 'PR', color: '#f59e0b' },
+                  { label: 'Registered Depts', value: departments.length, icon: <Building2 size={24} />, color: 'var(--primary-light)' },
+                  { label: 'Project Submissions', value: submissions.length, icon: <Rocket size={24} />, color: 'var(--secondary-light)' },
+                  { label: 'Total Students', value: submissions.reduce((a, s) => a + s.members.length, 0), icon: <Users size={24} />, color: '#10b981' },
+                  { label: 'Unique Projects', value: new Set(submissions.map(s => s.project_name)).size, icon: <BookOpen size={24} />, color: '#f59e0b' },
                 ].map(s => (
-                  <div key={s.label} className="stat-card">
-                    <div style={{ fontSize: 28, marginBottom: 4 }}>{s.icon}</div>
-                    <div className="stat-number" style={{ color: s.color }}>{s.value}</div>
-                    <div className="stat-label">{s.label}</div>
+                  <div key={s.label} className="glow-card" style={{ padding: 24, position: 'relative' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <span style={{ color: s.color }}>{s.icon}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, letterSpacing: 0.5 }}>LIVE</span>
+                    </div>
+                    <div className="stat-number" style={{ color: s.color, fontSize: 32, fontFamily: 'var(--font-mono)' }}>{s.value}</div>
+                    <div className="stat-label" style={{ fontSize: 11, marginTop: 4 }}>{s.label}</div>
                   </div>
                 ))}
               </div>
