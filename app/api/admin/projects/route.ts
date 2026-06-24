@@ -23,13 +23,17 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { name, description } = body
+  const { name, description, submission_type } = body
   if (!name || !name.trim()) {
     return NextResponse.json({ error: 'Project name is required' }, { status: 400 })
   }
   const { data, error } = await supabaseAdmin
     .from('projects')
-    .insert({ name: name.trim(), description: description?.trim() || null })
+    .insert({
+      name: name.trim(),
+      description: description?.trim() || null,
+      submission_type: submission_type || 'github'
+    })
     .select()
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -55,6 +59,7 @@ export async function PATCH(req: NextRequest) {
   const updates: Record<string, unknown> = {}
   if (body.active !== undefined) updates.active = body.active
   if (body.name !== undefined) updates.name = body.name
+  if (body.submission_type !== undefined) updates.submission_type = body.submission_type
 
   const { data, error } = await supabaseAdmin
     .from('projects')

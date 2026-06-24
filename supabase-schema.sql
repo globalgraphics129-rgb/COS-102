@@ -1,6 +1,12 @@
 -- AcademiHub — Complete Supabase Schema
 -- Run this in your Supabase SQL Editor
 
+-- ====================================================================
+-- MIGRATION NOTE FOR EXISTING DATABASES:
+-- If you already have tables, run this query to update your schema safely:
+-- ALTER TABLE projects ADD COLUMN IF NOT EXISTS submission_type TEXT DEFAULT 'github';
+-- ====================================================================
+
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -12,6 +18,7 @@ CREATE TABLE projects (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   description TEXT,
+  submission_type TEXT NOT NULL DEFAULT 'github',
   active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

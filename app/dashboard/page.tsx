@@ -36,7 +36,7 @@ export default function DashboardPage() {
 
     if (user.department_id) {
       Promise.all([
-        fetch(`/api/admin?type=departments`).then(r => r.json()),
+        fetch(`/api/register-department`).then(r => r.json()),
         fetch(`/api/register-group?departmentId=${user.department_id}`).then(r => r.json()),
       ]).then(([deptData, groupsData]) => {
         const found = (deptData.departments || []).find((d: any) => d.id === user.department_id)

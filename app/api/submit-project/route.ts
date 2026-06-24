@@ -68,3 +68,42 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ submission })
 }
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const email = searchParams.get('email')
+  const matric = searchParams.get('matric')
+  const projectId = searchParams.get('projectId')
+
+  if (!email && !matric) {
+    return NextResponse.json({ error: 'Query parameters email or matric is required' }, { status: 400 })
+  }
+
+  let dbQuery = supabaseAdmin.from('submissions').select('*')
+  if (projectId) {
+    dbQuery = dbQuery.eq('project_id', projectId)
+  }
+
+  const { data: allSubs, error } = await dbQuery
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  let found: any = null
+  if (email) {
+    found = allSubs.find((s: any) =>
+      s.leader_email?.toLowerCase() === email.toLowerCase() ||
+      (s.members || []).some((m: any) => {
+        const mEmail = typeof m === 'string' ? '' : (m.email || '')
+        return mEmail.toLowerCase() === email.toLowerCase()
+      })
+    )
+  } else if (matric) {
+    found = allSubs.find((s: any) =>
+      (s.members || []).some((m: any) => {
+        if (typeof m === 'string') return m.toLowerCase().includes(matric.toLowerCase())
+        return (m.matric || '').toLowerCase() === matric.toLowerCase() || (m.name || '').toLowerCase().includes(matric.toLowerCase())
+      })
+    )
+  }
+
+  return NextResponse.json({ submission: found || null })
+}

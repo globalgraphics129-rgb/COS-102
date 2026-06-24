@@ -24,10 +24,12 @@ interface Submission {
   leader_name: string; leader_email: string; leader_phone: string;
   github_link: string; members: Member[]; notes: string;
   submitted_at: string; department: string;
+  project_id?: string;
 }
 
 interface ProjectInfo {
   id: string; name: string; description: string | null;
+  submission_type: string;
   active: boolean; created_at: string;
 }
 interface StudentEntry {
@@ -101,6 +103,7 @@ export default function AdminPage() {
   const [showCreateProject, setShowCreateProject] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectDesc, setNewProjectDesc] = useState('')
+  const [newProjectSubmissionType, setNewProjectSubmissionType] = useState('github')
   const [creatingProject, setCreatingProject] = useState(false)
   const [clearingProject, setClearingProject] = useState<string | null>(null)
   const [deletingProject, setDeletingProject] = useState<string | null>(null)
@@ -513,13 +516,18 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
       const res = await adminFetch('/api/admin/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newProjectName.trim(), description: newProjectDesc.trim() || null }),
+        body: JSON.stringify({
+          name: newProjectName.trim(),
+          description: newProjectDesc.trim() || null,
+          submission_type: newProjectSubmissionType
+        }),
       })
       if (!res.ok) { const err = await res.json(); toast.error(err.error || 'Failed'); return }
       toast.success('Project created!')
       setShowCreateProject(false)
       setNewProjectName('')
       setNewProjectDesc('')
+      setNewProjectSubmissionType('github')
       loadProjects()
     } catch { toast.error('Failed to create project') }
     finally { setCreatingProject(false) }
@@ -1734,7 +1742,17 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                           className="btn btn-secondary"
                           style={{ fontSize: 12, padding: '6px 14px' }}
                         >
-                          <><ExternalLink size={14} style={{ marginRight: 6 }} /> GitHub <ArrowRight size={14} style={{ marginLeft: 4 }} /></>
+                          {(() => {
+                            const proj = projects.find(p => p.id === s.project_id)
+                            const subType = proj?.submission_type || 'github'
+                            if (subType === 'github') {
+                              return <><ExternalLink size={14} style={{ marginRight: 6 }} /> GitHub <ArrowRight size={14} style={{ marginLeft: 4 }} /></>
+                            } else if (subType === 'file_link') {
+                              return <><ExternalLink size={14} style={{ marginRight: 6 }} /> View File <ArrowRight size={14} style={{ marginLeft: 4 }} /></>
+                            } else {
+                              return <><ExternalLink size={14} style={{ marginRight: 6 }} /> View Link <ArrowRight size={14} style={{ marginLeft: 4 }} /></>
+                            }
+                          })()}
                         </a>
                         {s.notes && (
                           <p style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic' }}>
@@ -1857,9 +1875,17 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                         placeholder="Brief description of this project..."
                         style={{ minHeight: 80, resize: 'vertical' }} />
                     </div>
+                    <div>
+                      <label className="label">Submission / Entry Type *</label>
+                      <select className="input select" value={newProjectSubmissionType} onChange={e => setNewProjectSubmissionType(e.target.value)}>
+                        <option value="github">GitHub Repository Link</option>
+                        <option value="file_link">Document / File Link (Google Drive, OneDrive, etc.)</option>
+                        <option value="any_link">General Link (Figma, Website, Video, doc link, etc.)</option>
+                      </select>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
-                    <button onClick={() => { setShowCreateProject(false); setNewProjectName(''); setNewProjectDesc('') }}
+                    <button onClick={() => { setShowCreateProject(false); setNewProjectName(''); setNewProjectDesc(''); setNewProjectSubmissionType('github') }}
                       className="btn btn-secondary">Cancel</button>
                     <button onClick={createProject} className="btn btn-primary" disabled={creatingProject}>
                       {creatingProject ? <><span className="spinner" /> Creating...</> : 'Create Project'}
@@ -1881,6 +1907,11 @@ I'm writing regarding your registration of ${d.department} on AcademiHub.
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                           <span style={{ fontSize: 16, fontWeight: 700 }}>{p.name}</span>
                           {isActive && <span className="badge badge-violet">Active</span>}
+                          {p.submission_type && (
+                            <span className="badge badge-cyan" style={{ textTransform: 'capitalize' }}>
+                              {p.submission_type.replace('_', ' ')}
+                            </span>
+                          )}
                         </div>
                         {p.description && <p style={{ fontSize: 12, color: 'var(--text-3)' }}>{p.description}</p>}
                         <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>

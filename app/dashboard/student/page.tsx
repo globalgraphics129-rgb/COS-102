@@ -40,11 +40,11 @@ export default function StudentDashboard() {
   const [profile, setProfile] = useState<StudentProfile | null>(null)
 
   useEffect(() => {
-    fetch('/api/admin/projects').then(r => r.json()).then(d => {
+    fetch('/api/projects').then(r => r.json()).then(d => {
       setProjects(d.projects || [])
     }).catch(() => {})
-    fetch('/api/admin/settings').then(r => r.json()).then(d => {
-      setSettings(d.settings || null)
+    fetch('/api/portal-settings').then(r => r.json()).then(d => {
+      setSettings(d.closes_at ? { submission_deadline: d.closes_at } : null)
     }).catch(() => {})
   }, [])
 
@@ -83,18 +83,10 @@ export default function StudentDashboard() {
   const findSubmissionsForEmail = async (email: string) => {
     setLoadingSub(true)
     try {
-      const res = await fetch('/api/admin?type=submissions')
+      const res = await fetch(`/api/submit-project?email=${encodeURIComponent(email)}`)
       const data = await res.json()
-      const subs = data.submissions || []
-      const found = subs.find((s: any) =>
-        s.leader_email?.toLowerCase() === email.toLowerCase() ||
-        (s.members || []).some((m: any) => {
-          if (typeof m === 'string') return false
-          return m.email?.toLowerCase() === email.toLowerCase()
-        })
-      )
-      if (found) {
-        setSubmission(found)
+      if (data.submission) {
+        setSubmission(data.submission)
         setSearched(true)
       }
     } catch {} finally {
@@ -108,17 +100,12 @@ export default function StudentDashboard() {
     setSearched(true)
     try {
       const pid = filterProject || undefined
-      const url = pid ? `/api/admin?type=submissions&projectId=${pid}` : '/api/admin?type=submissions'
+      const url = pid 
+        ? `/api/submit-project?matric=${encodeURIComponent(searchMatric.trim())}&projectId=${pid}`
+        : `/api/submit-project?matric=${encodeURIComponent(searchMatric.trim())}`
       const sRes = await fetch(url)
       const data = await sRes.json()
-      const subs = data.submissions || []
-      const found = subs.find((s: any) =>
-        (s.members || []).some((m: any) => {
-          if (typeof m === 'string') return m.toLowerCase().includes(searchMatric.toLowerCase())
-          return (m.matric || '').toLowerCase() === searchMatric.toLowerCase()
-        })
-      )
-      setSubmission(found || null)
+      setSubmission(data.submission || null)
     } catch {
       setSubmission(null)
     } finally {

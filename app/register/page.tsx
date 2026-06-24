@@ -18,7 +18,7 @@ export default function RegisterPage() {
   const [loadingDepts, setLoadingDepts] = useState(true)
 
   useState(() => {
-    fetch('/api/admin?type=departments')
+    fetch('/api/register-department')
       .then(r => r.json())
       .then(data => setDepartments(data.departments || []))
       .catch(() => {})

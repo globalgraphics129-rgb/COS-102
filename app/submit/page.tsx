@@ -9,7 +9,7 @@ import { GraduationCap, Users, Rocket, Building2, ArrowLeft, ArrowRight, Lock, F
 
 interface Department { id: string; department: string; number_of_groups: number }
 interface Group { id: string; group_number: number; leader_name: string; project_name: string; submitted: boolean }
-interface Project { id: string; name: string; description: string | null }
+interface Project { id: string; name: string; description: string | null; submission_type?: string }
 interface Member { name: string; matric: string }
 
 type InputMode = 'manual' | 'bulk' | 'upload'
@@ -154,12 +154,22 @@ function SubmitProjectInner() {
 
   const selectedGroupData = groups.find(g => g.id === selectedGroup)
   const deptData = departments.find(d => d.id === selectedDept)
+  const activeProject = projects.find(p => p.id === selectedProjectId)
+  const submissionType = activeProject?.submission_type || 'github'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedDept || !selectedGroup) { toast.error('Select department and group'); return }
     if (members.length === 0) { toast.error('Add at least one group member'); return }
-    if (!githubLink.startsWith('https://github.com')) { toast.error('Please enter a valid GitHub link'); return }
+    
+    if (submissionType === 'github' && !githubLink.trim().startsWith('https://github.com')) {
+      toast.error('Please enter a valid GitHub link')
+      return
+    }
+    if ((submissionType === 'file_link' || submissionType === 'any_link') && !githubLink.trim().startsWith('http://') && !githubLink.trim().startsWith('https://')) {
+      toast.error('Please enter a valid submission URL link')
+      return
+    }
 
     setLoading(true)
     try {
@@ -520,33 +530,45 @@ function SubmitProjectInner() {
             )}
           </div>
 
-          {/* GitHub */}
+          {/* Project Link Submission */}
           <div className="card" style={{ marginBottom: 16 }}>
             <h3 style={{ fontSize: 11, fontWeight: 700, marginBottom: 16, color: 'var(--violet-light)', fontFamily: 'Syne, sans-serif', textTransform: 'uppercase', letterSpacing: 1 }}>
-              Project Repository
+              {submissionType === 'github' ? 'Project Repository' : 'Project Submission Link'}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label className="label">GitHub Repository Link *</label>
+                <label className="label">
+                  {submissionType === 'github' && 'GitHub Repository Link *'}
+                  {submissionType === 'file_link' && 'Submission File Link *'}
+                  {submissionType === 'any_link' && 'Submission URL Link *'}
+                </label>
                 <div style={{ position: 'relative' }}>
-                  <span style={{
-                    position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                    fontSize: 12, color: 'var(--text-3)', fontFamily: 'JetBrains Mono, monospace'
-                  }}>
-                    github.com/
-                  </span>
+                  {submissionType === 'github' && (
+                    <span style={{
+                      position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                      fontSize: 12, color: 'var(--text-3)', fontFamily: 'JetBrains Mono, monospace'
+                    }}>
+                      github.com/
+                    </span>
+                  )}
                   <input
                     className="input"
                     type="url"
                     value={githubLink}
                     onChange={e => setGithubLink(e.target.value)}
-                    placeholder="https://github.com/username/repo"
-                    style={{ paddingLeft: 100 }}
+                    placeholder={
+                      submissionType === 'github' ? 'https://github.com/username/repo' :
+                      submissionType === 'file_link' ? 'https://drive.google.com/file/... or OneDrive link' :
+                      'https://figma.com/file/... or website link'
+                    }
+                    style={{ paddingLeft: submissionType === 'github' ? 100 : 16 }}
                     required
                   />
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>
-                  Must be a valid public GitHub repository
+                  {submissionType === 'github' && 'Must be a valid public GitHub repository'}
+                  {submissionType === 'file_link' && 'Upload your file (PDF, ZIP, DOCX, etc.) to Google Drive or OneDrive and paste the shared link here.'}
+                  {submissionType === 'any_link' && 'Paste the link to your project submission (Figma, Youtube video, Website, doc link, etc.)'}
                 </p>
               </div>
               <div>
